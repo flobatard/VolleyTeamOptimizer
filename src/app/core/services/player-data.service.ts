@@ -19,7 +19,7 @@ export class PlayerDataService {
           id: index,
           name: nom.trim(),
           gender: genre.trim(),
-          global: Number(note_globale),
+          global_impact: Number(note_globale),
           attack: Number(attaque),
           set: Number(passe),
           defense: Number(defense),

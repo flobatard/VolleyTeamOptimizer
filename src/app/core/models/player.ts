@@ -4,6 +4,6 @@ export interface Player {
     attack: number,
     defense: number,
     set: number,
-    global: number,
+    global_impact: number,
     gender: string
 }
