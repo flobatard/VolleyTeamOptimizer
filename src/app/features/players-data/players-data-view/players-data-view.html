@@ -1,1 +1,41 @@
-<p>players-data-view works!</p>
+<div class="players-view">
+  <div class="toolbar">
+    <input
+      type="file"
+      accept=".csv"
+      #fileInput
+      (change)="onFileSelected($event)"
+      style="display: none"
+    />
+    <button class="import-btn" (click)="fileInput.click()">
+      Importer un fichier CSV
+    </button>
+  </div>
+
+  @if (players().length > 0) {
+    <table class="players-table">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Genre</th>
+          <th>Note globale</th>
+          <th>Attaque</th>
+          <th>Passe</th>
+          <th>Défense</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (player of players(); track player.name) {
+          <tr>
+            <td>{{ player.name }}</td>
+            <td>{{ player.gender }}</td>
+            <td>{{ player.global }}</td>
+            <td>{{ player.attack }}</td>
+            <td>{{ player.set }}</td>
+            <td>{{ player.defense }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
