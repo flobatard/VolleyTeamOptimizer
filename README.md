@@ -1,4 +1,25 @@
 # VolleyTeamOptimizer
+🏐 Intelligent Volley Team Generator
+
+Un moteur de répartition d'équipes basé sur l'optimisation heuristique, développé en Angular.
+✨ Fonctionnalités
+
+    Génération 4v4 Automatique : Importez vos joueurs via CSV et laissez l'algo faire le reste.
+
+    Multi-critères : Prise en compte de l'attaque, de la passe, de la défense et d'une note global.
+
+    Algorithme Transparent : Une approche par randomisation contrôlée et scoring pour minimiser les écarts de niveau.
+
+    Architecture Scalable : Moteur de calcul découplé de l'UI pour de futures contraintes complexes (mixité, postes fixes).
+
+🛠 Stack Technique
+
+    Framework : Angular 21+
+
+    Logique : TypeScript (Heuristic Randomization)
+
+
+## Angular
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.0.4.
 
