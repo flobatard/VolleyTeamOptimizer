@@ -28,6 +28,27 @@ export const routes: Routes = [
             (m) => m.PlayersDataView
           ),
       },
+      {
+        path: 'solver',
+        loadComponent: () =>
+          import('./features/solvers/solver-main-page/solver-main-page').then(
+            (m) => m.SolverMainPage
+          ),
+        children: [
+          {
+            path: '',
+            redirectTo: 'genetic',
+            pathMatch: 'full',
+          },
+          {
+            path: 'genetic',
+            loadComponent: () =>
+              import('./features/solvers/genetic-solver-component/genetic-solver-component').then(
+                (m) => m.GeneticSolverComponent
+              ),
+          },
+        ],
+      },
     ],
   },
   {

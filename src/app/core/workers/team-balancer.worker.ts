@@ -17,7 +17,7 @@ export class TeamManagerService {
 
   balanceTeams(players: Player[]) {
     this.isCalculating.set(true);
-    const worker = new Worker(new URL('./core/workers/team-balancer.worker', import.meta.url));
+    const worker = new Worker(new URL('./team-balancer.worker', import.meta.url));
     
     worker.onmessage = ({ data }) => {
       this.teams.set(data);

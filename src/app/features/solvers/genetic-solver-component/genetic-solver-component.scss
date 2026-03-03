@@ -1,0 +1,136 @@
+.genetic-solver {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+// ── Avertissement ─────────────────────────────────────────────────────────────
+
+.warning {
+  padding: 0.875rem 1.25rem;
+  background: #fff8e6;
+  border: 1px solid #f5a623;
+  border-radius: 8px;
+  color: #7a4f00;
+  font-size: 0.875rem;
+}
+
+// ── Contrôles ─────────────────────────────────────────────────────────────────
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.control-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #444;
+}
+
+.team-size-input {
+  width: 72px;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  text-align: center;
+
+  &:focus {
+    outline: none;
+    border-color: #1a3a5c;
+  }
+}
+
+.run-btn {
+  padding: 0.625rem 1.5rem;
+  background: #f5a623;
+  color: #1a1a1a;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+
+  &:hover:not(:disabled) {
+    background: #e09415;
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    background: #ddd;
+    color: #999;
+    cursor: not-allowed;
+  }
+}
+
+// ── Grille d'équipes ──────────────────────────────────────────────────────────
+
+.teams-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.team-card {
+  border: 1px solid #e0e6ef;
+  border-radius: 10px;
+  overflow: hidden;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.625rem 1rem;
+    background: #1a3a5c;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  &__count {
+    font-size: 0.75rem;
+    font-weight: 400;
+    opacity: 0.75;
+  }
+
+  &__players {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+.player-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.85rem;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:nth-child(even) {
+    background: #f7f9fc;
+  }
+}
+
+.player-name {
+  font-weight: 500;
+  color: #222;
+}
+
+.player-meta {
+  font-size: 0.75rem;
+  color: #888;
+}

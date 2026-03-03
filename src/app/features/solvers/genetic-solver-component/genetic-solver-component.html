@@ -1,1 +1,48 @@
-<p>genetic-solver-component works!</p>
+<div class="genetic-solver">
+  @if (players().length === 0) {
+    <div class="warning">
+      Aucun joueur chargé — importez d'abord un fichier CSV dans l'onglet "Joueurs".
+    </div>
+  }
+
+  <div class="controls">
+    <label class="control-label" for="teamSize">Taille cible par équipe</label>
+    <input
+      id="teamSize"
+      class="team-size-input"
+      type="number"
+      [ngModel]="targetTeamSize()"
+      (ngModelChange)="targetTeamSize.set($event)"
+      min="2"
+      max="20"
+    />
+    <button
+      class="run-btn"
+      (click)="run()"
+      [disabled]="isRunning() || players().length === 0"
+    >
+      {{ isRunning() ? 'Calcul en cours…' : 'Équilibrer les équipes' }}
+    </button>
+  </div>
+
+  @if (teams().length > 0) {
+    <div class="teams-grid">
+      @for (team of teams(); track $index) {
+        <div class="team-card">
+          <div class="team-card__header">
+            Équipe {{ $index + 1 }}
+            <span class="team-card__count">{{ team.length }} joueurs</span>
+          </div>
+          <ul class="team-card__players">
+            @for (player of team; track player.name) {
+              <li class="player-row">
+                <span class="player-name">{{ player.name }}</span>
+                <span class="player-meta">{{ player.gender }} · {{ player.global_impact }}</span>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+  }
+</div>
