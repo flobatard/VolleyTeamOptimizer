@@ -94,6 +94,14 @@ export class PlayerDataService {
     this.persistSelected(ids);
   }
 
+  toCsvContent(): string {
+    const header = 'nom;genre;note_globale;attaque;passe;defense';
+    const rows = this._players().map(
+      (p) => `${p.name};${p.gender};${p.global_impact};${p.attack};${p.set};${p.defense}`,
+    );
+    return [header, ...rows].join('\n');
+  }
+
   clearPlayers(): void {
     this._players.set([]);
     localStorage.removeItem(STORAGE_KEY);

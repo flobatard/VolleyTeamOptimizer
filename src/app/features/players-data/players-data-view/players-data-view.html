@@ -10,6 +10,11 @@
     <button class="import-btn" (click)="fileInput.click()">
       Importer un fichier CSV
     </button>
+    @if (players().length > 0) {
+      <button class="export-btn" (click)="exportCsv()">
+        Exporter en CSV
+      </button>
+    }
   </div>
 
   @if (players().length > 0) {
