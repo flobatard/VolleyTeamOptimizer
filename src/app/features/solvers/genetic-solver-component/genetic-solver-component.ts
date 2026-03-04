@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PlayerDataService } from '../../../core/services/player-data.service';
-import { TeamManagerService } from '../../../core/services/team-manager.service';
+import { Player } from '../../../core/models/player';
 
 @Component({
   selector: 'app-genetic-solver-component',
@@ -11,16 +11,26 @@ import { TeamManagerService } from '../../../core/services/team-manager.service'
 })
 export class GeneticSolverComponent {
   private readonly playerDataService = inject(PlayerDataService);
-  private readonly teamManagerService = inject(TeamManagerService);
 
   protected readonly players = this.playerDataService.selectedPlayers;
-  protected readonly teams = this.teamManagerService.teams;
-  protected readonly isRunning = this.teamManagerService.isCalculating;
+  readonly teams = signal<Player[][]>([]);
+  readonly isRunning = signal<boolean>(false);
 
   protected readonly targetTeamSize = signal(6);
 
   run(): void {
-    if (this.players().length === 0) return;
-    this.teamManagerService.balanceTeams(this.players(), 'genetic', this.targetTeamSize());
+    const selectedPlayers = this.players()
+    const teamSize = this.targetTeamSize()
+    if (selectedPlayers.length === 0) return;
+    this.isRunning.set(true);
+    const worker = new Worker(new URL('../workers/genetic-algo.worker', import.meta.url));
+
+    worker.onmessage = ({ data }) => {
+      this.teams.set(data);
+      this.isRunning.set(false);
+      worker.terminate();
+    };
+
+    worker.postMessage({ players: selectedPlayers , targetTeamSize: teamSize, params: {} });
   }
 }
