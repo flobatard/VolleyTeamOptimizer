@@ -16,6 +16,14 @@
     <table class="players-table">
       <thead>
         <tr>
+          <th class="col-select">
+            <input
+              type="checkbox"
+              [checked]="allSelected()"
+              [indeterminate]="someSelected()"
+              (change)="toggleAll()"
+            />
+          </th>
           <th>Nom</th>
           <th>Genre</th>
           <th>Note globale</th>
@@ -26,7 +34,15 @@
       </thead>
       <tbody>
         @for (player of players(); track player.name) {
-          <tr>
+          <tr [class.selected]="selectedPlayerIds().has(player.id)" (click)="toggleSelection(player.id)">
+            <td class="col-select">
+              <input
+                type="checkbox"
+                [checked]="selectedPlayerIds().has(player.id)"
+                (click)="$event.stopPropagation()"
+                (change)="toggleSelection(player.id)"
+              />
+            </td>
             <td>{{ player.name }}</td>
             <td>{{ player.gender }}</td>
             <td>{{ player.global_impact }}</td>

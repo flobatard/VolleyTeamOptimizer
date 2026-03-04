@@ -57,6 +57,8 @@
   }
 
   tbody tr {
+    cursor: pointer;
+
     &:nth-child(even) {
       background: #f7f9fc;
     }
@@ -64,5 +66,19 @@
     &:hover {
       background: #eef3f9;
     }
+
+    &.selected {
+      background: #ddeeff;
+
+      &:hover {
+        background: #cce4ff;
+      }
+    }
+  }
+
+  .col-select {
+    width: 2.5rem;
+    text-align: center;
+    padding: 0.625rem 0.5rem;
   }
 }

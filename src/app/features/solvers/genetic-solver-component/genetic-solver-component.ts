@@ -13,7 +13,7 @@ export class GeneticSolverComponent {
   private readonly playerDataService = inject(PlayerDataService);
   private readonly teamManagerService = inject(TeamManagerService);
 
-  protected readonly players = this.playerDataService.players;
+  protected readonly players = this.playerDataService.selectedPlayers;
   protected readonly teams = this.teamManagerService.teams;
   protected readonly isRunning = this.teamManagerService.isCalculating;
 
