@@ -46,6 +46,15 @@ export class PlayersDataView {
     URL.revokeObjectURL(url);
   }
 
+  addPlayer(): void {
+    this.playerDataService.addPlayer();
+  }
+
+  updateName(id: number, event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.playerDataService.updatePlayer(id, { name: value });
+  }
+
   updateGender(id: number, event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
     this.playerDataService.updatePlayer(id, { gender: value });

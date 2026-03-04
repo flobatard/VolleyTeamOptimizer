@@ -82,7 +82,16 @@ export class PlayerDataService {
     this.persistSelected(current);
   }
 
-  updatePlayer(id: number, changes: Partial<Pick<Player, 'global_impact' | 'attack' | 'set' | 'defense' | 'gender'>>): void {
+  addPlayer(): void {
+    const players = this._players();
+    const nextId = players.length > 0 ? Math.max(...players.map((p) => p.id)) + 1 : 0;
+    const newPlayer: Player = { id: nextId, name: '', gender: 'H', global_impact: 5, attack: 5, set: 5, defense: 5 };
+    const updated = [...players, newPlayer];
+    this._players.set(updated);
+    this.persist(updated);
+  }
+
+  updatePlayer(id: number, changes: Partial<Pick<Player, 'name' | 'global_impact' | 'attack' | 'set' | 'defense' | 'gender'>>): void {
     const updated = this._players().map((p) => (p.id === id ? { ...p, ...changes } : p));
     this._players.set(updated);
     this.persist(updated);

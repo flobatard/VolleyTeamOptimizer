@@ -15,6 +15,9 @@
         Exporter en CSV
       </button>
     }
+    <button class="add-btn" (click)="addPlayer()">
+      + Ajouter un joueur
+    </button>
   </div>
 
   @if (players().length > 0) {
@@ -48,7 +51,11 @@
                 (change)="toggleSelection(player.id)"
               />
             </td>
-            <td>{{ player.name }}</td>
+            <td class="col-name">
+              <input type="text" [value]="player.name" placeholder="Nom"
+                (click)="$event.stopPropagation()"
+                (change)="updateName(player.id, $event)" />
+            </td>
             <td class="col-gender">
               <select
                 [value]="player.gender"
@@ -83,6 +90,13 @@
           </tr>
         }
       </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="8" class="add-row">
+            <button class="add-btn" (click)="addPlayer()">+ Ajouter un joueur</button>
+          </td>
+        </tr>
+      </tfoot>
     </table>
   }
 </div>
