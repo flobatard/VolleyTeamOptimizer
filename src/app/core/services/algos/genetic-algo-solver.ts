@@ -6,8 +6,8 @@ export class GeneticAlgoSolver {
   public generateBalancedTeams(players: Player[], targetTeamSize: number, params : any = {}): Player[][] {
     // 0. Default params
     const POPULATION_SIZE = params.POPULATION_SIZE || 100
-    const GENERATIONS = params.GENERATIONS || 500
-    const MUTATION_RATE = params.MUTATION_RATE || 0.5
+    const GENERATIONS = params.GENERATIONS || 1000
+    const MUTATION_RATE = params.MUTATION_RATE || 0.7
     
     // 1. Déterminer le nombre optimal d'équipes
     const numTeams = Math.max(1, Math.round(players.length / targetTeamSize));
@@ -20,11 +20,11 @@ export class GeneticAlgoSolver {
     // 3. Boucle d'évolution
     for (let gen = 0; gen < GENERATIONS; gen++) {
       // Trier la population du meilleur au pire (le score le plus bas est le meilleur)
-      population.sort((a, b) => this.calculateCost(a, numTeams) - this.calculateCost(b, numTeams));
+      population.sort((a, b) => this.calculateCost(a, numTeams).totalCost - this.calculateCost(b, numTeams).totalCost);
 
       const newPopulation: Player[][] = [];
       // On garde les 10% meilleurs (Elitisme) pour ne pas perdre les bonnes solutions
-      const eliteCount = Math.max(1, Math.floor(POPULATION_SIZE * 0.05));
+      const eliteCount = Math.max(1, Math.floor(POPULATION_SIZE * 0.10));
       newPopulation.push(...population.slice(0, eliteCount));
 
       // On remplit le reste
@@ -45,7 +45,7 @@ export class GeneticAlgoSolver {
     }
 
     // A la fin, le meilleur génome est à l'index 0
-    population.sort((a, b) => this.calculateCost(a, numTeams) - this.calculateCost(b, numTeams));
+    population.sort((a, b) => this.calculateCost(a, numTeams).totalCost - this.calculateCost(b, numTeams).totalCost);
     return this.chunkIntoTeams(population[0], numTeams);
   }
 
@@ -53,7 +53,7 @@ export class GeneticAlgoSolver {
    * LA FONCTION MAGIQUE (Fitness/Cost function)
    * Plus le score retourné est proche de 0, plus les équipes sont équilibrées.
    */
-  private calculateCost(genome: Player[], numTeams: number): number {
+  private calculateCost(genome: Player[], numTeams: number): {totalCost: number, teamsCost: number[]} {
     const teams = this.chunkIntoTeams(genome, numTeams);
     let totalCost = 0;
 
@@ -64,28 +64,37 @@ export class GeneticAlgoSolver {
     const totalAttack = genome.reduce((sum, p) => sum + p.attack, 0)
 
     const targetTeamGlobal = totalGlobal / numTeams;
+    const targetMeanGlobal = totalGlobal / genome.length
     const targetTeamDefense = totalDefense / numTeams;
     const medianSetter = this.calculateMedian(genome, (player : Player) => player.set)
+
     const meanSetter = totalSet / genome.length
 
     const medianAttacker = this.calculateMedian(genome, (player : Player) => player.attack)
     const targetAttackTeam = totalAttack / numTeams
+    const targetMeanAttack = totalAttack / genome.length
 
     let max_male = 0
     let max_female = 0
     let min_male = genome.length
     let min_female = genome.length
 
+    let teamsCost = []
+
     for (const team of teams) {
+      let teamCost = 0
       // 1. Pénalité sur l'écart de niveau Global
       const teamGlobal = team.reduce((sum, p) => sum + p.global_impact, 0);
+      const teamMeanGlobal = teamGlobal / team.length
       const teamDefense = team.reduce((sum, p) => sum + p.defense, 0);
       const teamSetter = team.reduce((max, p) => Math.max(p.set, max), 0)
       const teamAttack = team.reduce((sum, p) => sum + p.attack, 0);
+      const meanTeamAttack = teamAttack / team.length
       const bestAttack = team.reduce((max, p) => Math.max(p.attack, max), 0)
 
-      totalCost += Math.abs(targetTeamGlobal - teamGlobal);
-      totalCost += Math.abs(targetTeamDefense - teamDefense)
+      //totalCost += Math.abs(targetTeamGlobal - teamGlobal);
+      teamCost += Math.abs(teamMeanGlobal - targetMeanGlobal)*(genome.length/numTeams)
+      teamCost += Math.abs(targetTeamDefense - teamDefense)
 
       // 2. Pénalité sur le manque de mixité
       // Si une équipe n'a que des "M" ou que des "F", on pénalise lourdement (poids x50 par exemple)
@@ -95,22 +104,21 @@ export class GeneticAlgoSolver {
       max_female = Math.max(females, max_female)
       min_male = Math.min(males, min_male)
       min_female = Math.min(females, min_female)
-      if (males === 0 || females === 0) {
-        totalCost += 50; 
-      }
 
       // Check setter capability
-      if (medianSetter > teamSetter) {
-        totalCost += 60
+      if (medianSetter >= teamSetter) {
+        teamCost += 300
       }
-      totalCost += Math.max(0, (meanSetter - teamSetter))*(genome.length/numTeams)
+      teamCost += Math.max(0, (meanSetter - teamSetter))*(genome.length/numTeams)
   
 
        // Check attack capability
       if (medianAttacker > bestAttack) {
-        totalCost += 60
+        teamCost += 50
       }
-      totalCost += Math.abs(targetAttackTeam - teamAttack)
+      teamCost += Math.abs(targetMeanAttack - teamAttack)*(genome.length/numTeams)
+      teamsCost.push(teamCost)
+      totalCost += teamCost
     }
 
     if (max_female - min_female > 1)
@@ -118,7 +126,7 @@ export class GeneticAlgoSolver {
         totalCost += 100*numTeams
     }
 
-    return totalCost;
+    return {totalCost: totalCost, teamsCost: teamsCost}
   }
 
   // --- Utilitaires ---
