@@ -49,7 +49,17 @@
               />
             </td>
             <td>{{ player.name }}</td>
-            <td>{{ player.gender }}</td>
+            <td class="col-gender">
+              <select
+                [value]="player.gender"
+                (click)="$event.stopPropagation()"
+                (change)="updateGender(player.id, $event)"
+              >
+                <option value="H">H</option>
+                <option value="F">F</option>
+                <option value="A">A</option>
+              </select>
+            </td>
             <td class="col-stat">
               <input type="number" min="1" max="10" [value]="player.global_impact"
                 (click)="$event.stopPropagation()"

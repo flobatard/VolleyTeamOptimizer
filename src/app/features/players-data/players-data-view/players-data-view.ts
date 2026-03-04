@@ -46,6 +46,11 @@ export class PlayersDataView {
     URL.revokeObjectURL(url);
   }
 
+  updateGender(id: number, event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.playerDataService.updatePlayer(id, { gender: value });
+  }
+
   updateStat(
     id: number,
     field: 'global_impact' | 'attack' | 'set' | 'defense',

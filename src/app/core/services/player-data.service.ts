@@ -82,7 +82,7 @@ export class PlayerDataService {
     this.persistSelected(current);
   }
 
-  updatePlayer(id: number, changes: Partial<Pick<Player, 'global_impact' | 'attack' | 'set' | 'defense'>>): void {
+  updatePlayer(id: number, changes: Partial<Pick<Player, 'global_impact' | 'attack' | 'set' | 'defense' | 'gender'>>): void {
     const updated = this._players().map((p) => (p.id === id ? { ...p, ...changes } : p));
     this._players.set(updated);
     this.persist(updated);
