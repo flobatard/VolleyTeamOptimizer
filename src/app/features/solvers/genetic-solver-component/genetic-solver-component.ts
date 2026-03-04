@@ -1,8 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Player } from '../../../core/models/player';
-import { GeneticAlgoSolver } from '../../../core/services/algos/genetic-algo-solver';
 import { PlayerDataService } from '../../../core/services/player-data.service';
+import { TeamManagerService } from '../../../core/services/team-manager.service';
 
 @Component({
   selector: 'app-genetic-solver-component',
@@ -12,19 +11,16 @@ import { PlayerDataService } from '../../../core/services/player-data.service';
 })
 export class GeneticSolverComponent {
   private readonly playerDataService = inject(PlayerDataService);
+  private readonly teamManagerService = inject(TeamManagerService);
+
   protected readonly players = this.playerDataService.players;
+  protected readonly teams = this.teamManagerService.teams;
+  protected readonly isRunning = this.teamManagerService.isCalculating;
 
   protected readonly targetTeamSize = signal(6);
-  protected readonly teams = signal<Player[][]>([]);
-  protected readonly isRunning = signal(false);
 
   run(): void {
     if (this.players().length === 0) return;
-    this.isRunning.set(true);
-    setTimeout(() => {
-      const solver = new GeneticAlgoSolver();
-      this.teams.set(solver.generateBalancedTeams(this.players(), this.targetTeamSize()));
-      this.isRunning.set(false);
-    }, 0);
+    this.teamManagerService.balanceTeams(this.players(), 'genetic', this.targetTeamSize());
   }
 }

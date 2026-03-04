@@ -37,7 +37,7 @@
             @for (player of team; track player.name) {
               <li class="player-row">
                 <span class="player-name">{{ player.name }}</span>
-                <span class="player-meta">{{ player.gender }} · {{ player.global_impact }}</span>
+                <span class="player-meta">{{ player.gender }} · {{ player.global_impact }}<br/> {{ player.attack }} · {{player.set}} · {{ player.defense }} </span>
               </li>
             }
           </ul>
