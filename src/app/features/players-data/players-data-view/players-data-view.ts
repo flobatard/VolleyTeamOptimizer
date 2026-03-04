@@ -34,4 +34,13 @@ export class PlayersDataView {
   toggleAll(): void {
     this.playerDataService.setAllPlayersSelection(!this.allSelected());
   }
+
+  updateStat(
+    id: number,
+    field: 'global_impact' | 'attack' | 'set' | 'defense',
+    event: Event,
+  ): void {
+    const value = Math.min(10, Math.max(1, Number((event.target as HTMLInputElement).value)));
+    this.playerDataService.updatePlayer(id, { [field]: value });
+  }
 }

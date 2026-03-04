@@ -45,10 +45,26 @@
             </td>
             <td>{{ player.name }}</td>
             <td>{{ player.gender }}</td>
-            <td>{{ player.global_impact }}</td>
-            <td>{{ player.attack }}</td>
-            <td>{{ player.set }}</td>
-            <td>{{ player.defense }}</td>
+            <td class="col-stat">
+              <input type="number" min="1" max="10" [value]="player.global_impact"
+                (click)="$event.stopPropagation()"
+                (change)="updateStat(player.id, 'global_impact', $event)" />
+            </td>
+            <td class="col-stat">
+              <input type="number" min="1" max="10" [value]="player.attack"
+                (click)="$event.stopPropagation()"
+                (change)="updateStat(player.id, 'attack', $event)" />
+            </td>
+            <td class="col-stat">
+              <input type="number" min="1" max="10" [value]="player.set"
+                (click)="$event.stopPropagation()"
+                (change)="updateStat(player.id, 'set', $event)" />
+            </td>
+            <td class="col-stat">
+              <input type="number" min="1" max="10" [value]="player.defense"
+                (click)="$event.stopPropagation()"
+                (change)="updateStat(player.id, 'defense', $event)" />
+            </td>
           </tr>
         }
       </tbody>

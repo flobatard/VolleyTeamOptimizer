@@ -82,6 +82,12 @@ export class PlayerDataService {
     this.persistSelected(current);
   }
 
+  updatePlayer(id: number, changes: Partial<Pick<Player, 'global_impact' | 'attack' | 'set' | 'defense'>>): void {
+    const updated = this._players().map((p) => (p.id === id ? { ...p, ...changes } : p));
+    this._players.set(updated);
+    this.persist(updated);
+  }
+
   setAllPlayersSelection(selected: boolean): void {
     const ids = selected ? new Set(this._players().map((p) => p.id)) : new Set<number>();
     this._selectedPlayerIds.set(ids);
