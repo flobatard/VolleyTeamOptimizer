@@ -91,6 +91,17 @@ export class PlayerDataService {
     this.persist(updated);
   }
 
+  deletePlayer(id: number): void {
+    const updated = this._players().filter((p) => p.id !== id);
+    this._players.set(updated);
+    this.persist(updated);
+    const selectedIds = new Set(this._selectedPlayerIds());
+    if (selectedIds.delete(id)) {
+      this._selectedPlayerIds.set(selectedIds);
+      this.persistSelected(selectedIds);
+    }
+  }
+
   updatePlayer(id: number, changes: Partial<Pick<Player, 'name' | 'global_impact' | 'attack' | 'set' | 'defense' | 'gender'>>): void {
     const updated = this._players().map((p) => (p.id === id ? { ...p, ...changes } : p));
     this._players.set(updated);

@@ -38,6 +38,7 @@
           <th>Attaque</th>
           <th>Passe</th>
           <th>Défense</th>
+          <th class="col-actions"></th>
         </tr>
       </thead>
       <tbody>
@@ -86,6 +87,10 @@
               <input type="number" min="1" max="10" [value]="player.defense"
                 (click)="$event.stopPropagation()"
                 (change)="updateStat(player.id, 'defense', $event)" />
+            </td>
+            <td class="col-actions">
+              <button class="delete-btn" title="Supprimer"
+                (click)="$event.stopPropagation(); deletePlayer(player.id)">✕</button>
             </td>
           </tr>
         }

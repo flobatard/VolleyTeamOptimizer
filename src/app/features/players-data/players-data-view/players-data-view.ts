@@ -50,6 +50,10 @@ export class PlayersDataView {
     this.playerDataService.addPlayer();
   }
 
+  deletePlayer(id: number): void {
+    this.playerDataService.deletePlayer(id);
+  }
+
   updateName(id: number, event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.playerDataService.updatePlayer(id, { name: value });

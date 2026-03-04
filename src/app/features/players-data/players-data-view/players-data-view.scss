@@ -119,6 +119,28 @@
     }
   }
 
+  .col-actions {
+    width: 2.5rem;
+    text-align: center;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .delete-btn {
+    background: none;
+    border: none;
+    color: #c0392b;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    line-height: 1;
+    transition: background 0.15s ease;
+
+    &:hover {
+      background: #fdecea;
+    }
+  }
+
   tfoot .add-row {
     padding: 0.5rem 1rem;
     border-top: 2px solid #e8e8e8;
