@@ -1,18 +1,30 @@
 <div class="pair-list">
   <div class="pair-adder">
-    <select class="player-select" [(ngModel)]="newId1">
-      <option [ngValue]="null" disabled>Joueur 1</option>
+    <input
+      class="player-input"
+      [attr.list]="'players-datalist-' + instanceId + '-1'"
+      [(ngModel)]="searchName1"
+      (ngModelChange)="onName1Change($event)"
+      placeholder="Joueur 1…"
+    />
+    <datalist [id]="'players-datalist-' + instanceId + '-1'">
       @for (player of players(); track player.id) {
-        <option [ngValue]="player.id">{{ player.name || '(sans nom)' }}</option>
+        <option [value]="player.name"></option>
       }
-    </select>
+    </datalist>
 
-    <select class="player-select" [(ngModel)]="newId2">
-      <option [ngValue]="null" disabled>Joueur 2</option>
+    <input
+      class="player-input"
+      [attr.list]="'players-datalist-' + instanceId + '-2'"
+      [(ngModel)]="searchName2"
+      (ngModelChange)="onName2Change($event)"
+      placeholder="Joueur 2…"
+    />
+    <datalist [id]="'players-datalist-' + instanceId + '-2'">
       @for (player of players(); track player.id) {
-        <option [ngValue]="player.id">{{ player.name || '(sans nom)' }}</option>
+        <option [value]="player.name"></option>
       }
-    </select>
+    </datalist>
 
     <button class="add-pair-btn"
       (click)="addPair()"

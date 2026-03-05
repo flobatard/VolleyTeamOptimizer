@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PlayerDataService } from '../../core/services/player-data.service';
-import { PlayerPair, PairType } from '../../core/models/player-pair';
+import { PlayerPair } from '../../core/models/player-pair';
 
 @Component({
   selector: 'app-list-pair-players',
@@ -10,6 +10,9 @@ import { PlayerPair, PairType } from '../../core/models/player-pair';
   styleUrl: './list-pair-players.scss',
 })
 export class ListPairPlayers {
+  private static instanceCount = 0;
+  protected readonly instanceId = ++ListPairPlayers.instanceCount;
+
   private readonly playerDataService = inject(PlayerDataService);
   protected readonly players = this.playerDataService.players;
 
@@ -18,6 +21,18 @@ export class ListPairPlayers {
 
   protected newId1: number | null = null;
   protected newId2: number | null = null;
+  protected searchName1 = '';
+  protected searchName2 = '';
+
+  protected onName1Change(name: string): void {
+    const player = this.players().find((p) => p.name === name);
+    this.newId1 = player?.id ?? null;
+  }
+
+  protected onName2Change(name: string): void {
+    const player = this.players().find((p) => p.name === name);
+    this.newId2 = player?.id ?? null;
+  }
 
   protected playerName(id: number): string {
     return this.players().find((p) => p.id === id)?.name || '?';
@@ -33,9 +48,11 @@ export class ListPairPlayers {
         (p.player1Id === id2 && p.player2Id === id1),
     );
     if (alreadyExists) return;
-    this._pairs.update((pairs) => [...pairs, { player1Id: id1, player2Id: id2}]);
+    this._pairs.update((pairs) => [...pairs, { player1Id: id1, player2Id: id2 }]);
     this.newId1 = null;
     this.newId2 = null;
+    this.searchName1 = '';
+    this.searchName2 = '';
   }
 
   removePair(index: number): void {
