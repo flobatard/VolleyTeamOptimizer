@@ -82,6 +82,49 @@
   }
 }
 
+// ── Options avancées ──────────────────────────────────────────────────────────
+
+.advanced-options {
+  border: 1px solid #e0e6ef;
+  border-radius: 8px;
+
+  &[open] {
+    .advanced-options__summary::after {
+      transform: rotate(90deg);
+    }
+  }
+
+  &__summary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1a3a5c;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &::after {
+      content: '›';
+      font-size: 1.1rem;
+      transition: transform 0.2s ease;
+    }
+  }
+
+  &__content {
+    padding: 0 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
 // ── Section générique ─────────────────────────────────────────────────────────
 
 .player-constraint-section {
