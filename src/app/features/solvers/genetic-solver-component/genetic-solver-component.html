@@ -33,6 +33,20 @@
     </button>
   </div>
 
+  <div class="player-constraint-section">
+    <h3 class="player-constraint-section-title">Contraintes des paires de joueurs</h3>
+    <div class="players-pair-list">
+      <div>
+        <h4>Joueurs qui joue ensemble</h4>
+        <app-list-pair-players />
+      </div>
+      <div>
+        <h4>Joueurs qui ne joue pas ensemble</h4>
+        <app-list-pair-players />
+      </div>
+    </div>
+  </div>
+
   @if (teams().length > 0) {
     <div class="teams-grid">
       @for (team of teams(); track $index) {

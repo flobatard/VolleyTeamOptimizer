@@ -1,0 +1,132 @@
+.pair-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+// ── Ligne d'ajout ──────────────────────────────────────────────────────────────
+
+.pair-adder {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.player-select {
+  padding: 0.45rem 0.625rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background: #fff;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: #1a3a5c;
+  }
+}
+
+.type-toggle {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.type-option {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+
+  input[type='radio'] {
+    cursor: pointer;
+  }
+}
+
+.add-pair-btn {
+  padding: 0.45rem 1rem;
+  background: #1a3a5c;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: #254f7a;
+  }
+
+  &:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+}
+
+// ── Liste des paires ───────────────────────────────────────────────────────────
+
+.pairs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pair-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: #f7f9fc;
+  border: 1px solid #e0e6ef;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.pair-players {
+  flex: 1;
+  font-weight: 500;
+  color: #222;
+}
+
+.pair-type {
+  padding: 0.2rem 0.6rem;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  &--together {
+    background: #ddeeff;
+    color: #1a3a5c;
+  }
+
+  &--apart {
+    background: #fdecea;
+    color: #c0392b;
+  }
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: #c0392b;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: #fdecea;
+  }
+}
+
+.empty-hint {
+  font-size: 0.8rem;
+  color: #aaa;
+  margin: 0;
+}

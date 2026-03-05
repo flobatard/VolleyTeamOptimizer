@@ -1,0 +1,39 @@
+<div class="pair-list">
+  <div class="pair-adder">
+    <select class="player-select" [(ngModel)]="newId1">
+      <option [ngValue]="null" disabled>Joueur 1</option>
+      @for (player of players(); track player.id) {
+        <option [ngValue]="player.id">{{ player.name || '(sans nom)' }}</option>
+      }
+    </select>
+
+    <select class="player-select" [(ngModel)]="newId2">
+      <option [ngValue]="null" disabled>Joueur 2</option>
+      @for (player of players(); track player.id) {
+        <option [ngValue]="player.id">{{ player.name || '(sans nom)' }}</option>
+      }
+    </select>
+
+    <button class="add-pair-btn"
+      (click)="addPair()"
+      [disabled]="newId1 === null || newId2 === null || newId1 === newId2"
+    >
+      + Ajouter
+    </button>
+  </div>
+
+  @if (pairs().length > 0) {
+    <ul class="pairs">
+      @for (pair of pairs(); track $index) {
+        <li class="pair-item">
+          <span class="pair-players">
+            {{ playerName(pair.player1Id) }} — {{ playerName(pair.player2Id) }}
+          </span>
+          <button class="remove-btn" title="Supprimer" (click)="removePair($index)">✕</button>
+        </li>
+      }
+    </ul>
+  } @else {
+    <p class="empty-hint">Aucune paire définie.</p>
+  }
+</div>

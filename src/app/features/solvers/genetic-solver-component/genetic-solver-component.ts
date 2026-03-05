@@ -2,10 +2,11 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PlayerDataService } from '../../../core/services/player-data.service';
 import { Player } from '../../../core/models/player';
+import { ListPairPlayers } from '../../../shared/list-pair-players/list-pair-players';
 
 @Component({
   selector: 'app-genetic-solver-component',
-  imports: [FormsModule],
+  imports: [FormsModule, ListPairPlayers],
   templateUrl: './genetic-solver-component.html',
   styleUrl: './genetic-solver-component.scss',
 })
