@@ -28,6 +28,17 @@
   font-size: 0.875rem;
   font-weight: 500;
   color: #444;
+
+  &--checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+
+    input[type='checkbox'] {
+      cursor: pointer;
+    }
+  }
 }
 
 .team-size-input {

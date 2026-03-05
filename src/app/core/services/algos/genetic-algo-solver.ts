@@ -7,10 +7,21 @@ export class GeneticAlgoSolver {
     // 0. Default params
     const POPULATION_SIZE = params.POPULATION_SIZE || 100
     const GENERATIONS = params.GENERATIONS || 1000
-    const MUTATION_RATE = params.MUTATION_RATE || 0.7
-    
+    const MUTATION_RATE = params.MUTATION_RATE || 0.7  
+    const FORCE_EVEN_TEAMS = params.FORCE_EVEN_TEAMS || false;
+  
     // 1. Déterminer le nombre optimal d'équipes
-    const numTeams = Math.max(1, Math.round(players.length / targetTeamSize));
+    let numTeams = Math.max(1, Math.round(players.length / targetTeamSize));
+    if (FORCE_EVEN_TEAMS && numTeams % 2 !== 0) {
+      if (players.length/numTeams > targetTeamSize)
+      {
+        numTeams = numTeams > 1 ? numTeams + 1 : 2;
+      }
+      else
+      {
+        numTeams = numTeams > 1 ? numTeams - 1 : 2;
+      }
+    }
     
     // 2. Initialiser la population (des listes de joueurs mélangées au hasard)
     let population: Player[][] = Array.from({ length: POPULATION_SIZE }, () =>

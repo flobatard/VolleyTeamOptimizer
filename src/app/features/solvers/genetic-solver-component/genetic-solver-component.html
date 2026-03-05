@@ -16,6 +16,14 @@
       min="2"
       max="20"
     />
+    <label class="control-label control-label--checkbox">
+      <input
+        type="checkbox"
+        [ngModel]="forceEvenTeams()"
+        (ngModelChange)="forceEvenTeams.set($event)"
+      />
+      Nombre d'équipes pair
+    </label>
     <button
       class="run-btn"
       (click)="run()"

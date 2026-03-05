@@ -17,6 +17,7 @@ export class GeneticSolverComponent {
   readonly isRunning = signal<boolean>(false);
 
   protected readonly targetTeamSize = signal(6);
+  protected readonly forceEvenTeams = signal(false);
 
   run(): void {
     const selectedPlayers = this.players()
@@ -31,6 +32,6 @@ export class GeneticSolverComponent {
       worker.terminate();
     };
 
-    worker.postMessage({ players: selectedPlayers , targetTeamSize: teamSize, params: {} });
+    worker.postMessage({ players: selectedPlayers, targetTeamSize: teamSize, params: { FORCE_EVEN_TEAMS: this.forceEvenTeams() } });
   }
 }
