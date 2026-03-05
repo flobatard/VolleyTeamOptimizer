@@ -38,11 +38,11 @@
     <div class="players-pair-list">
       <div>
         <h4>Joueurs qui joue ensemble</h4>
-        <app-list-pair-players />
+        <app-list-pair-players (pairsChange)="togetherPairsList.set($event)" />
       </div>
       <div>
         <h4>Joueurs qui ne joue pas ensemble</h4>
-        <app-list-pair-players />
+        <app-list-pair-players (pairsChange)="apartPairsList.set($event)" />
       </div>
     </div>
   </div>

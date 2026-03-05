@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PlayerDataService } from '../../core/services/player-data.service';
 import { PlayerPair } from '../../core/models/player-pair';
@@ -18,6 +18,7 @@ export class ListPairPlayers {
 
   private readonly _pairs = signal<PlayerPair[]>([]);
   readonly pairs = this._pairs.asReadonly();
+  readonly pairsChange = output<PlayerPair[]>();
 
   protected newId1: number | null = null;
   protected newId2: number | null = null;
@@ -49,6 +50,7 @@ export class ListPairPlayers {
     );
     if (alreadyExists) return;
     this._pairs.update((pairs) => [...pairs, { player1Id: id1, player2Id: id2 }]);
+    this.pairsChange.emit(this._pairs());
     this.newId1 = null;
     this.newId2 = null;
     this.searchName1 = '';
@@ -57,5 +59,6 @@ export class ListPairPlayers {
 
   removePair(index: number): void {
     this._pairs.update((pairs) => pairs.filter((_, i) => i !== index));
+    this.pairsChange.emit(this._pairs());
   }
 }
