@@ -21,6 +21,24 @@ export class GeneticSolverComponent {
   protected readonly targetTeamSize = signal(6);
   protected readonly forceEvenTeams = signal(false);
 
+  // Paramètres algo
+  protected readonly populationSize = signal(200);
+  protected readonly generations = signal(1000);
+  protected readonly mutationRate = signal(0.7);
+
+  // Paramètres attaque
+  protected readonly attackerThreshold = signal<number | null>(null);
+  protected readonly attackersPerTeam = signal(1);
+  protected readonly attackAbsencePenalty = signal(50);
+
+  // Paramètres passe
+  protected readonly setterThreshold = signal<number | null>(null);
+  protected readonly setterAbsencePenalty = signal(300);
+
+  // Paramètres généraux
+  protected readonly globalMeanPenaltyFactor = signal(1);
+  protected readonly teamDefensePenaltyFactor = signal(1);
+
   protected readonly togetherPairsList = signal<PlayerPair[]>([]);
   protected readonly apartPairsList = signal<PlayerPair[]>([]);
 
@@ -42,6 +60,16 @@ export class GeneticSolverComponent {
       targetTeamSize: teamSize,
       params: {
         FORCE_EVEN_TEAMS: this.forceEvenTeams(),
+        POPULATION_SIZE: this.populationSize(),
+        GENERATIONS: this.generations(),
+        MUTATION_RATE: this.mutationRate(),
+        ATTACKER_THRESHOLD: this.attackerThreshold() ?? undefined,
+        ATTACKERS_PER_TEAM: this.attackersPerTeam(),
+        ATTACK_ABSENCE_PENALTY: this.attackAbsencePenalty(),
+        SETTER_THRESHOLD: this.setterThreshold() ?? undefined,
+        SETTER_ABSENCE_PENALTY: this.setterAbsencePenalty(),
+        GLOBAL_MEAN_PENALTY_FACTOR: this.globalMeanPenaltyFactor(),
+        TEAM_DEFENSE_PENALTY_FACTOR: this.teamDefensePenaltyFactor(),
         TOGETHER_PAIRS: this.togetherPairsList(),
         APART_PAIRS: this.apartPairsList(),
       },

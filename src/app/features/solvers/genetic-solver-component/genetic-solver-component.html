@@ -37,6 +37,115 @@
     <summary class="advanced-options__summary">Options avancées</summary>
 
     <div class="advanced-options__content">
+
+      <div class="param-section">
+        <h3 class="param-section-title">Paramètres de l'algorithme</h3>
+        <div class="param-grid">
+          <div class="param-item">
+            <label class="param-label">
+              Taille de la population
+              <span class="param-tooltip" data-tip="Nombre d'individus dans la population. Plus élevé = meilleure qualité mais calcul plus lent.">?</span>
+            </label>
+            <input class="param-input" type="number" min="10" max="2000"
+              [ngModel]="populationSize()" (ngModelChange)="populationSize.set($event)" />
+          </div>
+          <div class="param-item">
+            <label class="param-label">
+              Nombre de générations
+              <span class="param-tooltip" data-tip="Nombre d'itérations de l'algorithme. Plus élevé = meilleure convergence mais calcul plus lent.">?</span>
+            </label>
+            <input class="param-input" type="number" min="10" max="10000"
+              [ngModel]="generations()" (ngModelChange)="generations.set($event)" />
+          </div>
+          <div class="param-item">
+            <label class="param-label">
+              Taux de mutation
+              <span class="param-tooltip" data-tip="Probabilité qu'un individu mute à chaque génération (0 à 1). Une valeur élevée favorise l'exploration.">?</span>
+            </label>
+            <input class="param-input" type="number" min="0" max="1" step="0.05"
+              [ngModel]="mutationRate()" (ngModelChange)="mutationRate.set($event)" />
+          </div>
+        </div>
+      </div>
+
+      <div class="param-section">
+        <h3 class="param-section-title">Paramètres de l'attaque</h3>
+        <div class="param-grid">
+          <div class="param-item">
+            <label class="param-label">
+              Seuil attaquant
+              <span class="param-tooltip" data-tip="Note d'attaque minimale pour qu'un joueur soit considéré comme attaquant. Laissez vide pour utiliser la médiane automatique.">?</span>
+            </label>
+            <input class="param-input" type="number" min="0" max="10" step="0.5"
+              placeholder="Auto (médiane)"
+              [ngModel]="attackerThreshold()"
+              (ngModelChange)="attackerThreshold.set($event === '' || $event === null ? null : +$event)" />
+          </div>
+          <div class="param-item">
+            <label class="param-label">
+              Attaquants par équipe
+              <span class="param-tooltip" data-tip="Nombre minimum d'attaquants souhaité par équipe.">?</span>
+            </label>
+            <input class="param-input" type="number" min="0" max="10"
+              [ngModel]="attackersPerTeam()" (ngModelChange)="attackersPerTeam.set($event)" />
+          </div>
+          <div class="param-item">
+            <label class="param-label">
+              Pénalité absence attaque
+              <span class="param-tooltip" data-tip="Pénalité ajoutée au coût d'une équipe pour chaque attaquant manquant.">?</span>
+            </label>
+            <input class="param-input" type="number" min="0"
+              [ngModel]="attackAbsencePenalty()" (ngModelChange)="attackAbsencePenalty.set($event)" />
+          </div>
+        </div>
+      </div>
+
+      <div class="param-section">
+        <h3 class="param-section-title">Paramètres de la passe</h3>
+        <div class="param-grid">
+          <div class="param-item">
+            <label class="param-label">
+              Seuil passeur
+              <span class="param-tooltip" data-tip="Note de passe minimale pour qu'un joueur soit considéré comme passeur. Laissez vide pour utiliser la médiane automatique.">?</span>
+            </label>
+            <input class="param-input" type="number" min="0" max="10" step="0.5"
+              placeholder="Auto (médiane)"
+              [ngModel]="setterThreshold()"
+              (ngModelChange)="setterThreshold.set($event === '' || $event === null ? null : +$event)" />
+          </div>
+          <div class="param-item">
+            <label class="param-label">
+              Pénalité absence passeur
+              <span class="param-tooltip" data-tip="Pénalité ajoutée au coût d'une équipe sans passeur qualifié.">?</span>
+            </label>
+            <input class="param-input" type="number" min="0"
+              [ngModel]="setterAbsencePenalty()" (ngModelChange)="setterAbsencePenalty.set($event)" />
+          </div>
+        </div>
+      </div>
+
+      <div class="param-section">
+        <h3 class="param-section-title">Paramètres généraux</h3>
+        <div class="param-grid">
+          <div class="param-item">
+            <label class="param-label">
+              Facteur pénalité moyenne globale
+              <span class="param-tooltip" data-tip="Multiplicateur appliqué à la pénalité d'écart de niveau global entre équipes. Augmenter pour forcer un meilleur équilibre global.">?</span>
+            </label>
+            <input class="param-input" type="number" min="0" step="0.1"
+              [ngModel]="globalMeanPenaltyFactor()" (ngModelChange)="globalMeanPenaltyFactor.set($event)" />
+          </div>
+          <div class="param-item">
+            <label class="param-label">
+              Facteur pénalité défense d'équipe
+              <span class="param-tooltip" data-tip="Multiplicateur appliqué à la pénalité d'écart de défense entre équipes. Augmenter pour mieux équilibrer la défense.">?</span>
+            </label>
+            <input class="param-input" type="number" min="0" step="0.1"
+              [ngModel]="teamDefensePenaltyFactor()" (ngModelChange)="teamDefensePenaltyFactor.set($event)" />
+          </div>
+        </div>
+      </div>
+
       <div class="player-constraint-section">
         <h3 class="player-constraint-section-title">Contraintes des paires de joueurs</h3>
         <div class="players-pair-list">

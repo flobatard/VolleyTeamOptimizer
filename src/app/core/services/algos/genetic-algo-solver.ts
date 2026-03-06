@@ -5,6 +5,19 @@ export interface GAParams {
   GENERATIONS?: number;
   MUTATION_RATE?: number;
   FORCE_EVEN_TEAMS?: boolean;
+
+  // Attaque
+  ATTACKER_THRESHOLD?: number;
+  ATTACKERS_PER_TEAM?: number;
+  ATTACK_ABSENCE_PENALTY?: number;
+
+  // Passe
+  SETTER_THRESHOLD?: number;
+  SETTER_ABSENCE_PENALTY?: number;
+
+  // Généraux
+  GLOBAL_MEAN_PENALTY_FACTOR?: number;
+  TEAM_DEFENSE_PENALTY_FACTOR?: number;
 }
 
 // Interface pour mettre en cache le score (Schwartzian transform)
@@ -22,6 +35,13 @@ interface GameConstants {
   meanSetter: number;
   medianAttacker: number;
   targetMeanAttack: number;
+  attackerThreshold: number;
+  attackersPerTeam: number;
+  attackAbsencePenalty: number;
+  setterThreshold: number;
+  setterAbsencePenalty: number;
+  globalMeanPenaltyFactor: number;
+  teamDefensePenaltyFactor: number;
 }
 
 export class GeneticAlgoSolver {
@@ -96,19 +116,28 @@ export class GeneticAlgoSolver {
 
   // --- Fonctions d'évaluation ---
 
-  private preCalculateConstants(players: Player[], numTeams: number, params : any = {}): GameConstants {
+  private preCalculateConstants(players: Player[], numTeams: number, params: GAParams = {}): GameConstants {
     const totalGlobal = players.reduce((sum, p) => sum + p.global_impact, 0);
     const totalDefense = players.reduce((sum, p) => sum + p.defense, 0);
     const totalSet = players.reduce((sum, p) => sum + p.set, 0);
     const totalAttack = players.reduce((sum, p) => sum + p.attack, 0);
+    const medianAttacker = this.calculateMedian(players, (p: Player) => p.attack);
+    const medianSetter = this.calculateMedian(players, (p: Player) => p.set);
 
     return {
       targetMeanGlobal: totalGlobal / players.length,
       targetTeamDefense: totalDefense / numTeams,
-      medianSetter: this.calculateMedian(players, (p: Player) => p.set),
+      medianSetter,
       meanSetter: totalSet / players.length,
-      medianAttacker: this.calculateMedian(players, (p: Player) => p.attack),
-      targetMeanAttack: totalAttack / players.length
+      medianAttacker,
+      targetMeanAttack: totalAttack / players.length,
+      attackerThreshold: params.ATTACKER_THRESHOLD ?? medianAttacker,
+      attackersPerTeam: params.ATTACKERS_PER_TEAM ?? 1,
+      attackAbsencePenalty: params.ATTACK_ABSENCE_PENALTY ?? 50,
+      setterThreshold: params.SETTER_THRESHOLD ?? medianSetter,
+      setterAbsencePenalty: params.SETTER_ABSENCE_PENALTY ?? 300,
+      globalMeanPenaltyFactor: params.GLOBAL_MEAN_PENALTY_FACTOR ?? 1,
+      teamDefensePenaltyFactor: params.TEAM_DEFENSE_PENALTY_FACTOR ?? 1,
     };
   }
 
@@ -131,15 +160,17 @@ export class GeneticAlgoSolver {
       const bestAttack = team.reduce((max, p) => Math.max(p.attack, max), 0);
 
       // Utilisation du carré (Math.pow) pour lisser les écarts et pénaliser plus durement les gros déséquilibres
-      teamCost += Math.pow(teamMeanGlobal - constants.targetMeanGlobal, 2) * (genome.length / numTeams);
-      teamCost += Math.pow(constants.targetTeamDefense - teamDefense, 2);
+      teamCost += Math.pow(teamMeanGlobal - constants.targetMeanGlobal, 2) * (genome.length / numTeams) * constants.globalMeanPenaltyFactor;
+      teamCost += Math.pow(constants.targetTeamDefense - teamDefense, 2) * constants.teamDefensePenaltyFactor;
 
       // Passeur
-      if (constants.medianSetter >= teamSetter) teamCost += 300;
+      if (constants.setterThreshold >= teamSetter) teamCost += constants.setterAbsencePenalty;
       teamCost += Math.max(0, (constants.meanSetter - teamSetter)) * (genome.length / numTeams);
 
       // Attaquant
-      if (constants.medianAttacker > bestAttack) teamCost += 50;
+      if (constants.attackerThreshold > bestAttack) teamCost += constants.attackAbsencePenalty;
+      const attackersInTeam = team.filter(p => p.attack >= constants.attackerThreshold).length;
+      if (attackersInTeam < constants.attackersPerTeam) teamCost += constants.attackAbsencePenalty * (constants.attackersPerTeam - attackersInTeam);
       teamCost += Math.pow(constants.targetMeanAttack - teamAttack, 2) * (genome.length / numTeams);
 
       // Mixité
