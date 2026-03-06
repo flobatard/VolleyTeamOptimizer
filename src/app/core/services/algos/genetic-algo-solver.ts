@@ -1,4 +1,5 @@
 import { Player } from "../../models/player";
+import { PlayerPair } from "../../models/player-pair";
 
 export interface GAParams {
   POPULATION_SIZE?: number;
@@ -18,6 +19,11 @@ export interface GAParams {
   // Généraux
   GLOBAL_MEAN_PENALTY_FACTOR?: number;
   TEAM_DEFENSE_PENALTY_FACTOR?: number;
+
+  // Contraintes paires
+  TOGETHER_PAIRS?: PlayerPair[];
+  APART_PAIRS?: PlayerPair[];
+  PAIR_CONSTRAINT_PENALTY?: number;
 }
 
 // Interface pour mettre en cache le score (Schwartzian transform)
@@ -42,6 +48,9 @@ interface GameConstants {
   setterAbsencePenalty: number;
   globalMeanPenaltyFactor: number;
   teamDefensePenaltyFactor: number;
+  togetherPairs: PlayerPair[];
+  apartPairs: PlayerPair[];
+  pairConstraintPenalty: number;
 }
 
 export class GeneticAlgoSolver {
@@ -136,8 +145,11 @@ export class GeneticAlgoSolver {
       attackAbsencePenalty: params.ATTACK_ABSENCE_PENALTY ?? 50,
       setterThreshold: params.SETTER_THRESHOLD ?? medianSetter,
       setterAbsencePenalty: params.SETTER_ABSENCE_PENALTY ?? 300,
-      globalMeanPenaltyFactor: params.GLOBAL_MEAN_PENALTY_FACTOR ?? 1,
+      globalMeanPenaltyFactor: params.GLOBAL_MEAN_PENALTY_FACTOR ?? 1.5,
       teamDefensePenaltyFactor: params.TEAM_DEFENSE_PENALTY_FACTOR ?? 1,
+      togetherPairs: params.TOGETHER_PAIRS ?? [],
+      apartPairs: params.APART_PAIRS ?? [],
+      pairConstraintPenalty: params.PAIR_CONSTRAINT_PENALTY ?? 1000,
     };
   }
 
@@ -184,6 +196,28 @@ export class GeneticAlgoSolver {
 
     if (max_female - min_female > 1) {
       totalCost += 100 * numTeams;
+    }
+
+    // Contraintes soft sur les paires de joueurs
+    if (constants.togetherPairs.length > 0 || constants.apartPairs.length > 0) {
+      const playerTeamIndex = new Map<number, number>();
+      teams.forEach((team, idx) => team.forEach(p => playerTeamIndex.set(p.id, idx)));
+
+      for (const pair of constants.togetherPairs) {
+        const t1 = playerTeamIndex.get(pair.player1Id);
+        const t2 = playerTeamIndex.get(pair.player2Id);
+        if (t1 !== undefined && t2 !== undefined && t1 !== t2) {
+          totalCost += constants.pairConstraintPenalty;
+        }
+      }
+
+      for (const pair of constants.apartPairs) {
+        const t1 = playerTeamIndex.get(pair.player1Id);
+        const t2 = playerTeamIndex.get(pair.player2Id);
+        if (t1 !== undefined && t2 !== undefined && t1 === t2) {
+          totalCost += constants.pairConstraintPenalty;
+        }
+      }
     }
 
     return {totalCost: totalCost, teamsCost: teamsCost};

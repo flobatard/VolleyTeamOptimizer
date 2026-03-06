@@ -36,7 +36,7 @@ export class GeneticSolverComponent {
   protected readonly setterAbsencePenalty = signal(300);
 
   // Paramètres généraux
-  protected readonly globalMeanPenaltyFactor = signal(1);
+  protected readonly globalMeanPenaltyFactor = signal(1.5);
   protected readonly teamDefensePenaltyFactor = signal(1);
 
   protected readonly togetherPairsList = signal<PlayerPair[]>([]);
