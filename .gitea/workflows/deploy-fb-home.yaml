@@ -32,12 +32,12 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - preprod
+      - fb_home
 
 env:
   REGISTRY: registry.vpn.h.fbatard.fr # Ou votre registry selon votre nom de domaine
   HOST: app-03.vpn.h.fbatard.fr
-  IMAGE_NAME: admin/preprod_beta_order_capture-front
+  IMAGE_NAME: admin/volley-team-optimizer
   # Répertoire de déploiement sur le(s) host(s) cible(s)
   DEPLOY_PATH: VolleyTeamOptimizer
   SSH_USER: deploy

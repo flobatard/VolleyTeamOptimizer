@@ -1,6 +1,7 @@
 services:
   app:
     build: .
+    image: registry.vpn.h.fbatard.fr/admin/volley-team-optimizer
     ports:
       - "4000:4000"
     environment:
