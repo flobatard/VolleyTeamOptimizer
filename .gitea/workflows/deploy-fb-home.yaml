@@ -39,7 +39,7 @@ env:
   HOST: app-03.vpn.h.fbatard.fr
   IMAGE_NAME: admin/preprod_beta_order_capture-front
   # Répertoire de déploiement sur le(s) host(s) cible(s)
-  DEPLOY_PATH: BOC_PREPROD_FRONT
+  DEPLOY_PATH: VolleyTeamOptimizer
   SSH_USER: deploy
   COMPOSE_FILE: docker-compose.yml
 
@@ -94,7 +94,7 @@ jobs:
         with:
           host: ${{ env.HOST }}
           username: ${{ env.SSH_USER }}
-          key: ${{ secrets.PRIVATE_PREPROD_SSH_KEY }}
+          key: ${{ secrets.PRIVATE_SSH_KEY }}
           script: mkdir -p ${{ env.DEPLOY_PATH }}
 
       - name: Upload ${{ env.COMPOSE_FILE }}
@@ -102,7 +102,7 @@ jobs:
         with:
           host: ${{ env.HOST }}
           username: ${{ env.SSH_USER }}
-          key: ${{ secrets.PRIVATE_PREPROD_SSH_KEY }}
+          key: ${{ secrets.PRIVATE_SSH_KEY }}
           source: ${{ env.COMPOSE_FILE }}
           target: ${{ env.DEPLOY_PATH }}
 
@@ -112,7 +112,7 @@ jobs:
         with:
           host: ${{ env.HOST }}
           username: ${{ env.SSH_USER }}
-          key: ${{ secrets.PRIVATE_PREPROD_SSH_KEY }}
+          key: ${{ secrets.PRIVATE_SSH_KEY }}
           script: |
             set -e
             cd ${{ env.DEPLOY_PATH }}
