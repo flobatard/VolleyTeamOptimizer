@@ -15,9 +15,11 @@
         Exporter en CSV
       </button>
     }
-    <button class="add-btn" (click)="addPlayer()">
-      + Ajouter un joueur
-    </button>
+    @if (players().length === 0) {
+      <button class="add-btn" (click)="addPlayer()">
+        + Ajouter un joueur
+      </button>
+    }
   </div>
 
   @if (players().length > 0) {
