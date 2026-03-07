@@ -173,9 +173,10 @@ export class GeneticAlgoSolver {
 
       const attackersInTeam = team.filter(p => p.attack >= constants.attackerThreshold).length;
       const settersInTeam = team.filter(p => p.set >= constants.setterThreshold).length;
+      const setterOrAttackeInTeam = team.filter(p => p.set >= constants.setterThreshold || p.attack >= constants.attackerThreshold).length;
 
       // To prevent if someone is both setter and attacker to have seperate roles
-      if (settersInTeam + attackersInTeam < 1 + constants.attackersPerTeam) teamCost += constants.attackAbsencePenalty;
+      if (setterOrAttackeInTeam < 1 + constants.attackersPerTeam) teamCost += constants.attackAbsencePenalty;
 
       // Utilisation du carré (Math.pow) pour lisser les écarts et pénaliser plus durement les gros déséquilibres
       teamCost += Math.pow(teamMeanGlobal - constants.targetMeanGlobal, 2) * (genome.length / numTeams) * constants.globalMeanPenaltyFactor;
