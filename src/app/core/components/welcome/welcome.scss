@@ -18,6 +18,13 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 16px;
   backdrop-filter: blur(8px);
+  width: 90%;
+  max-width: 560px;
+
+  @media (max-width: 480px) {
+    padding: 2rem 1.5rem;
+    border-radius: 12px;
+  }
 }
 
 .welcome-title {
@@ -26,12 +33,20 @@
   color: #ffffff;
   margin: 0 0 1rem;
   letter-spacing: -0.02em;
+
+  @media (max-width: 480px) {
+    font-size: 2rem;
+  }
 }
 
 .welcome-tagline {
   font-size: 1.15rem;
   color: rgba(255, 255, 255, 0.75);
   margin: 0 0 2.5rem;
+
+  @media (max-width: 480px) {
+    font-size: 1rem;
+  }
 }
 
 .cta-button {
@@ -44,6 +59,11 @@
   border-radius: 8px;
   text-decoration: none;
   transition: background 0.2s ease, transform 0.1s ease;
+
+  @media (max-width: 480px) {
+    padding: 0.75rem 2rem;
+    font-size: 0.95rem;
+  }
 
   &:hover {
     background: #e09415;

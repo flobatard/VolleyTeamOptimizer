@@ -10,6 +10,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .import-btn {
@@ -81,6 +82,13 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+
+  @media (min-width: 481px) {
+    display: table;
+  }
 
   thead tr {
     background: #1a3a5c;

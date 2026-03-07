@@ -22,6 +22,13 @@
   position: sticky;
   top: 0;
   z-index: 100;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: flex-start;
+    height: auto;
+    padding: 0.75rem 1rem 0;
+  }
 }
 
 .logo {
@@ -29,6 +36,10 @@
   font-weight: 700;
   color: #ffffff;
   letter-spacing: -0.01em;
+
+  @media (max-width: 480px) {
+    font-size: 1.1rem;
+  }
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
@@ -38,6 +49,11 @@
   align-items: stretch;
   height: 100%;
   gap: 0.25rem;
+
+  @media (max-width: 480px) {
+    height: auto;
+    width: 100%;
+  }
 }
 
 .nav-tab {
@@ -50,6 +66,11 @@
   text-decoration: none;
   border-bottom: 3px solid transparent;
   transition: color 0.15s ease, border-color 0.15s ease;
+
+  @media (max-width: 480px) {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
 
   &:hover {
     color: #ffffff;
@@ -67,4 +88,8 @@
 .content {
   flex: 1;
   padding: 2rem;
+
+  @media (max-width: 480px) {
+    padding: 1rem;
+  }
 }
