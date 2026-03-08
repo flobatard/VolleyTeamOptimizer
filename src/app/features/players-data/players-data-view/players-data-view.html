@@ -71,22 +71,22 @@
               </select>
             </td>
             <td class="col-stat" data-label="Note">
-              <input type="number" min="1" max="10" [value]="player.global_impact"
+              <input type="number" min="1" max="10" step="0.5" [value]="player.global_impact"
                 (click)="$event.stopPropagation()"
                 (change)="updateStat(player.id, 'global_impact', $event)" />
             </td>
             <td class="col-stat" data-label="Att.">
-              <input type="number" min="1" max="10" [value]="player.attack"
+              <input type="number" min="1" max="10" step="0.5" [value]="player.attack"
                 (click)="$event.stopPropagation()"
                 (change)="updateStat(player.id, 'attack', $event)" />
             </td>
             <td class="col-stat" data-label="Passe">
-              <input type="number" min="1" max="10" [value]="player.set"
+              <input type="number" min="1" max="10" step="0.5" [value]="player.set"
                 (click)="$event.stopPropagation()"
                 (change)="updateStat(player.id, 'set', $event)" />
             </td>
             <td class="col-stat" data-label="Déf.">
-              <input type="number" min="1" max="10" [value]="player.defense"
+              <input type="number" min="1" max="10" step="0.5" [value]="player.defense"
                 (click)="$event.stopPropagation()"
                 (change)="updateStat(player.id, 'defense', $event)" />
             </td>
