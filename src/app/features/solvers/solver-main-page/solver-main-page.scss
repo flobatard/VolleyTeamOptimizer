@@ -10,7 +10,7 @@
   display: flex;
   gap: 0.5rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .solver-btn {
@@ -20,10 +20,10 @@
   color: #555;
   font-size: 0.875rem;
   font-weight: 500;
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-disabled);
   border-radius: 20px;
   text-decoration: none;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
 
   &:hover {
     background: #e4e4e4;
@@ -31,8 +31,8 @@
   }
 
   &--active {
-    background: #1a3a5c;
-    color: #ffffff;
-    border-color: #1a3a5c;
+    background: var(--color-primary);
+    color: var(--color-white);
+    border-color: var(--color-primary);
   }
 }

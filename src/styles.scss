@@ -1,5 +1,58 @@
 /* You can add global styles to this file, and also import other style files */
 
+// ── Design tokens ─────────────────────────────────────────────────────────────
+
+:root {
+  // Brand — primary (navy blue)
+  --color-primary:              #1a3a5c;
+  --color-primary-hover:        #254f7a;
+  --color-primary-bg:           #eef3f9;
+  --color-primary-light:        #ddeeff;
+  --color-primary-lighter:      #cce4ff;
+  --color-primary-gradient-end: #2e6da4;
+
+  // Brand — accent (orange)
+  --color-accent:      #f5a623;
+  --color-accent-hover:#e09415;
+  --color-accent-bg:   #fff8e6;
+  --color-accent-text: #7a4f00;
+
+  // Semantic
+  --color-success:       #2e7d32;
+  --color-success-hover: #388e3c;
+  --color-danger:        #c0392b;
+  --color-danger-bg:     #fdecea;
+
+  // Text
+  --color-text:          #222;
+  --color-text-secondary:#444;
+  --color-text-muted:    #888;
+  --color-text-subtle:   #aaa;
+  --color-text-disabled: #999;
+  --color-text-dark:     #1a1a1a;
+
+  // Backgrounds & borders
+  --color-white:        #ffffff;
+  --color-bg-subtle:    #f7f9fc;
+  --color-border:       #e0e6ef;
+  --color-border-light: #e8e8e8;
+  --color-border-muted: #d0d0d0;
+  --color-border-input: #ccc;
+  --color-disabled:     #ddd;
+
+  // Border radii
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+
+  // Transitions
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+
 *,
 *::before,
 *::after {
@@ -14,4 +67,35 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
+}
+
+// ── Base element styles ────────────────────────────────────────────────────────
+
+button {
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: background var(--transition-base), transform 0.1s ease;
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+input[type='text'],
+input[type='number'],
+select {
+  font-family: inherit;
+  font-size: 0.875rem;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--transition-fast);
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
 }

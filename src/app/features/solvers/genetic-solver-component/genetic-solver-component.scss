@@ -8,10 +8,10 @@
 
 .warning {
   padding: 0.875rem 1.25rem;
-  background: #fff8e6;
-  border: 1px solid #f5a623;
-  border-radius: 8px;
-  color: #7a4f00;
+  background: var(--color-accent-bg);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-lg);
+  color: var(--color-accent-text);
   font-size: 0.875rem;
 }
 
@@ -27,7 +27,7 @@
 .control-label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #444;
+  color: var(--color-text-secondary);
 
   &--checkbox {
     display: flex;
@@ -44,30 +44,16 @@
 .team-size-input {
   width: 72px;
   padding: 0.5rem 0.625rem;
-  font-size: 0.9rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
   text-align: center;
-
-  &:focus {
-    outline: none;
-    border-color: #1a3a5c;
-  }
 }
 
 .run-btn {
   padding: 0.625rem 1.5rem;
-  background: #f5a623;
-  color: #1a1a1a;
-  font-size: 0.9rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease;
+  background: var(--color-accent);
+  color: var(--color-text-dark);
 
   &:hover:not(:disabled) {
-    background: #e09415;
+    background: var(--color-accent-hover);
     transform: translateY(-1px);
   }
 
@@ -76,17 +62,16 @@
   }
 
   &:disabled {
-    background: #ddd;
-    color: #999;
-    cursor: not-allowed;
+    background: var(--color-disabled);
+    color: var(--color-text-disabled);
   }
 }
 
 // ── Options avancées ──────────────────────────────────────────────────────────
 
 .advanced-options {
-  border: 1px solid #e0e6ef;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
 
   &[open] {
     .advanced-options__summary::after {
@@ -101,7 +86,7 @@
     padding: 0.75rem 1rem;
     font-size: 0.875rem;
     font-weight: 600;
-    color: #1a3a5c;
+    color: var(--color-primary);
     cursor: pointer;
     user-select: none;
     list-style: none;
@@ -113,7 +98,7 @@
     &::after {
       content: '›';
       font-size: 1.1rem;
-      transition: transform 0.2s ease;
+      transition: transform var(--transition-base);
     }
   }
 
@@ -132,15 +117,15 @@
   flex-direction: column;
   gap: 0.75rem;
   padding: 0.75rem;
-  background: #f7f9fc;
-  border-radius: 8px;
+  background: var(--color-bg-subtle);
+  border-radius: var(--radius-lg);
 }
 
 .param-section-title {
   margin: 0;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #1a3a5c;
+  color: var(--color-primary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -163,19 +148,11 @@
   gap: 0.3rem;
   font-size: 0.8rem;
   font-weight: 500;
-  color: #444;
+  color: var(--color-text-secondary);
 }
 
 .param-input {
   padding: 0.4rem 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 0.875rem;
-
-  &:focus {
-    outline: none;
-    border-color: #1a3a5c;
-  }
 }
 
 .param-tooltip {
@@ -186,8 +163,8 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #1a3a5c;
-  color: white;
+  background: var(--color-primary);
+  color: var(--color-white);
   font-size: 0.65rem;
   font-style: normal;
   cursor: help;
@@ -199,17 +176,17 @@
     bottom: calc(100% + 6px);
     left: 50%;
     transform: translateX(-50%);
-    background: #1a1a1a;
-    color: white;
+    background: var(--color-text-dark);
+    color: var(--color-white);
     padding: 0.4rem 0.6rem;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     font-size: 0.75rem;
     font-weight: 400;
     white-space: normal;
     width: 220px;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 0.15s;
+    transition: opacity var(--transition-fast);
     z-index: 10;
   }
 
@@ -230,7 +207,7 @@
   margin: 0;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #1a3a5c;
+  color: var(--color-primary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -250,8 +227,8 @@
 }
 
 .team-card {
-  border: 1px solid #e0e6ef;
-  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
   overflow: hidden;
 
   &__header {
@@ -259,8 +236,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.625rem 1rem;
-    background: #1a3a5c;
-    color: #ffffff;
+    background: var(--color-primary);
+    color: var(--color-white);
     font-weight: 600;
     font-size: 0.9rem;
   }
@@ -291,16 +268,16 @@
   }
 
   &:nth-child(even) {
-    background: #f7f9fc;
+    background: var(--color-bg-subtle);
   }
 }
 
 .player-name {
   font-weight: 500;
-  color: #222;
+  color: var(--color-text);
 }
 
 .player-meta {
   font-size: 0.75rem;
-  color: #888;
+  color: var(--color-text-muted);
 }

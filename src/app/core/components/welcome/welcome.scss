@@ -8,7 +8,7 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a3a5c 0%, #2e6da4 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-gradient-end) 100%);
 }
 
 .welcome-card {
@@ -30,7 +30,7 @@
 .welcome-title {
   font-size: 2.8rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-white);
   margin: 0 0 1rem;
   letter-spacing: -0.02em;
 
@@ -59,13 +59,13 @@
 .cta-button {
   display: inline-block;
   padding: 0.875rem 2.5rem;
-  background: #f5a623;
-  color: #1a1a1a;
+  background: var(--color-accent);
+  color: var(--color-text-dark);
   font-size: 1rem;
   font-weight: 600;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   text-decoration: none;
-  transition: background 0.2s ease, transform 0.1s ease;
+  transition: background var(--transition-base), transform 0.1s ease;
 
   @media (max-width: 480px) {
     padding: 0.75rem 2rem;
@@ -73,7 +73,7 @@
   }
 
   &:hover {
-    background: #e09415;
+    background: var(--color-accent-hover);
     transform: translateY(-1px);
   }
 

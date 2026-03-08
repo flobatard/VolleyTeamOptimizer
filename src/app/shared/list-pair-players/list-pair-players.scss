@@ -17,31 +17,17 @@
 
 .player-input {
   padding: 0.45rem 0.625rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  background: #fff;
+  border-radius: var(--radius-md);
+  background: var(--color-white);
   flex: 1 1 10rem;
   min-width: 8rem;
-
-  &:focus {
-    outline: none;
-    border-color: #1a3a5c;
-  }
 }
 
 .player-select {
   padding: 0.45rem 0.625rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  background: #fff;
+  border-radius: var(--radius-md);
+  background: var(--color-white);
   cursor: pointer;
-
-  &:focus {
-    outline: none;
-    border-color: #1a3a5c;
-  }
 }
 
 .type-toggle {
@@ -63,22 +49,18 @@
 
 .add-pair-btn {
   padding: 0.45rem 1rem;
-  background: #1a3a5c;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-white);
   font-size: 0.875rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s ease;
+  border-radius: var(--radius-md);
+  transition: background var(--transition-base);
 
   &:hover:not(:disabled) {
-    background: #254f7a;
+    background: var(--color-primary-hover);
   }
 
   &:disabled {
-    background: #ccc;
-    cursor: not-allowed;
+    background: var(--color-border-input);
   }
 }
 
@@ -98,16 +80,16 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem 0.75rem;
-  background: #f7f9fc;
-  border: 1px solid #e0e6ef;
-  border-radius: 6px;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   font-size: 0.875rem;
 }
 
 .pair-players {
   flex: 1;
   font-weight: 500;
-  color: #222;
+  color: var(--color-text);
 }
 
 .pair-type {
@@ -117,33 +99,33 @@
   font-weight: 600;
 
   &--together {
-    background: #ddeeff;
-    color: #1a3a5c;
+    background: var(--color-primary-light);
+    color: var(--color-primary);
   }
 
   &--apart {
-    background: #fdecea;
-    color: #c0392b;
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
   }
 }
 
 .remove-btn {
   background: none;
   border: none;
-  color: #c0392b;
+  color: var(--color-danger);
   font-size: 0.9rem;
   cursor: pointer;
   padding: 0.15rem 0.35rem;
-  border-radius: 4px;
-  transition: background 0.15s ease;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
 
   &:hover {
-    background: #fdecea;
+    background: var(--color-danger-bg);
   }
 }
 
 .empty-hint {
   font-size: 0.8rem;
-  color: #aaa;
+  color: var(--color-text-subtle);
   margin: 0;
 }

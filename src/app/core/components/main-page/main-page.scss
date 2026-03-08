@@ -17,7 +17,7 @@
   justify-content: space-between;
   padding: 0 2rem;
   height: 60px;
-  background: #1a3a5c;
+  background: var(--color-primary);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   position: sticky;
   top: 0;
@@ -34,7 +34,7 @@
 .logo {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-white);
   letter-spacing: -0.01em;
 
   @media (max-width: 480px) {
@@ -65,7 +65,7 @@
   font-weight: 500;
   text-decoration: none;
   border-bottom: 3px solid transparent;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
 
   @media (max-width: 480px) {
     padding: 0.6rem 1rem;
@@ -73,13 +73,13 @@
   }
 
   &:hover {
-    color: #ffffff;
+    color: var(--color-white);
     border-bottom-color: rgba(245, 166, 35, 0.5);
   }
 
   &--active {
-    color: #ffffff;
-    border-bottom-color: #f5a623;
+    color: var(--color-white);
+    border-bottom-color: var(--color-accent);
   }
 }
 
