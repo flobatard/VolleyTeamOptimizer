@@ -237,7 +237,7 @@
 
 .players-pair-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(600px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(1fr, 600px));
   gap: 16px;
 }
 

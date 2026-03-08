@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  width: 100%;
 }
 
 // ── Ligne d'ajout ──────────────────────────────────────────────────────────────
@@ -11,6 +12,22 @@
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
+  width: 100%;
+}
+
+.player-input {
+  padding: 0.45rem 0.625rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background: #fff;
+  flex: 1 1 10rem;
+  min-width: 8rem;
+
+  &:focus {
+    outline: none;
+    border-color: #1a3a5c;
+  }
 }
 
 .player-select {
