@@ -1,80 +1,82 @@
 # VolleyTeamOptimizer
-🏐 Intelligent Volley Team Generator
 
-Un moteur de répartition d'équipes basé sur l'optimisation heuristique, développé en Angular.
-✨ Fonctionnalités
+Générateur intelligent d'équipes de volley basé sur un algorithme génétique, développé en Angular 21.
 
-    Génération 4v4 Automatique : Importez vos joueurs via CSV et laissez l'algo faire le reste.
+## Fonctionnalités
 
-    Multi-critères : Prise en compte de l'attaque, de la passe, de la défense et d'une note global.
+- **Import CSV** : chargez vos joueurs via un fichier CSV semicolon-separated
+- **Multi-critères** : prise en compte de l'attaque, la passe, la défense et la note globale
+- **Algorithme génétique** : optimisation évolutionnaire sur 1000 générations pour minimiser les écarts de niveau
+- **Contraintes souples** : forcez des joueurs à être ensemble ou séparés, équilibrez le genre
+- **Non-bloquant** : l'algorithme tourne dans un Web Worker pour ne pas figer l'interface
+- **Persistance** : joueurs, sélection, paramètres et équipes générées sont sauvegardés en localStorage
 
-    Algorithme Transparent : Une approche par randomisation contrôlée et scoring pour minimiser les écarts de niveau.
+## Format CSV
 
-    Architecture Scalable : Moteur de calcul découplé de l'UI pour de futures contraintes complexes (mixité, postes fixes).
+```
+nom;genre;note_globale;attaque;passe;defense
+Jean;H;7;8;6;7
+Marie;F;8;7;7;9
+```
 
-🛠 Stack Technique
+## Stack Technique
 
-    Framework : Angular 21+
+| Couche | Techno |
+|--------|--------|
+| Framework | Angular 21 (standalone, signals, SSR) |
+| Build | Vite via `@angular/build` |
+| Tests | Vitest |
+| Langage | TypeScript 5.9 strict |
+| Style | SCSS |
 
-    Logique : TypeScript (Heuristic Randomization)
+## Architecture
 
+```
+src/app/
+├── core/
+│   ├── models/           # Player, PlayerPair
+│   ├── services/
+│   │   ├── player-data.service.ts
+│   │   └── algos/genetic-algo-solver.ts   ← cœur métier
+│   └── components/       # MainPage, Welcome
+├── features/
+│   ├── players-data/     # Import CSV, tableau joueurs
+│   └── solvers/
+│       ├── genetic-solver-component/      # UI paramètres + lancement
+│       └── workers/genetic-algo.worker.ts ← exécution en arrière-plan
+└── shared/
+    └── list-pair-players/ # Contraintes de paires
+```
 
-## Angular
-
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.0.4.
-
-## Development server
-
-To start a local development server, run:
+## Développement
 
 ```bash
+# Serveur de développement
 ng serve
-```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
+# Build production
 ng build
-```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
+# Tests unitaires
 ng test
 ```
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
+## Docker
 
 ```bash
-ng e2e
+docker compose up
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+## Paramètres de l'algorithme génétique
 
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+| Paramètre | Défaut | Description |
+|-----------|--------|-------------|
+| `POPULATION_SIZE` | 200 | Solutions par génération |
+| `GENERATIONS` | 1000 | Nombre d'itérations |
+| `MUTATION_RATE` | 0.7 | Probabilité de mutation (swap) |
+| `FORCE_EVEN_TEAMS` | false | Forcer des équipes de taille égale |
+| `ATTACKERS_PER_TEAM` | 1 | Attaquants requis par équipe |
+| `ATTACK_ABSENCE_PENALTY` | 50 | Pénalité si aucun attaquant |
+| `SETTER_ABSENCE_PENALTY` | 300 | Pénalité si aucun passeur |
+| `GLOBAL_MEAN_PENALTY_FACTOR` | 1.5 | Poids de l'équilibre global |
+| `PAIR_CONSTRAINT_PENALTY` | 1000 | Pénalité par contrainte de paire violée |
