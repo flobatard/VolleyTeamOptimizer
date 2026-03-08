@@ -1,9 +1,62 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PlayerDataService } from '../../../core/services/player-data.service';
 import { Player } from '../../../core/models/player';
 import { PlayerPair } from '../../../core/models/player-pair';
 import { ListPairPlayers } from '../../../shared/list-pair-players/list-pair-players';
+
+const STORAGE_KEY = 'VTO_genetic_solver_params';
+const STORAGE_KEY_TEAMS = 'VTO_genetic_solver_teams';
+
+interface PersistedParams {
+  targetTeamSize: number;
+  forceEvenTeams: boolean;
+  populationSize: number;
+  generations: number;
+  mutationRate: number;
+  attackerThreshold: number | null;
+  attackersPerTeam: number;
+  attackAbsencePenalty: number;
+  setterThreshold: number | null;
+  setterAbsencePenalty: number;
+  globalMeanPenaltyFactor: number;
+  teamDefensePenaltyFactor: number;
+  togetherPairsList: PlayerPair[];
+  apartPairsList: PlayerPair[];
+}
+
+const DEFAULT_PARAMS: PersistedParams = {
+  targetTeamSize: 6,
+  forceEvenTeams: false,
+  populationSize: 200,
+  generations: 1000,
+  mutationRate: 0.7,
+  attackerThreshold: null,
+  attackersPerTeam: 1,
+  attackAbsencePenalty: 50,
+  setterThreshold: null,
+  setterAbsencePenalty: 300,
+  globalMeanPenaltyFactor: 1.5,
+  teamDefensePenaltyFactor: 1,
+  togetherPairsList: [],
+  apartPairsList: [],
+};
+
+function loadParams(): PersistedParams {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) return { ...DEFAULT_PARAMS, ...JSON.parse(stored) };
+  } catch {}
+  return DEFAULT_PARAMS;
+}
+
+function loadTeams(): Player[][] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_TEAMS);
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  return [];
+}
 
 @Component({
   selector: 'app-genetic-solver-component',
@@ -15,32 +68,60 @@ export class GeneticSolverComponent {
   private readonly playerDataService = inject(PlayerDataService);
 
   protected readonly players = this.playerDataService.selectedPlayers;
-  readonly teams = signal<Player[][]>([]);
+  readonly teams = signal<Player[][]>(loadTeams());
   readonly isRunning = signal<boolean>(false);
 
-  protected readonly targetTeamSize = signal(6);
-  protected readonly forceEvenTeams = signal(false);
+  private readonly p = loadParams();
+
+  protected readonly targetTeamSize = signal(this.p.targetTeamSize);
+  protected readonly forceEvenTeams = signal(this.p.forceEvenTeams);
 
   // Paramètres algo
-  protected readonly populationSize = signal(200);
-  protected readonly generations = signal(1000);
-  protected readonly mutationRate = signal(0.7);
+  protected readonly populationSize = signal(this.p.populationSize);
+  protected readonly generations = signal(this.p.generations);
+  protected readonly mutationRate = signal(this.p.mutationRate);
 
   // Paramètres attaque
-  protected readonly attackerThreshold = signal<number | null>(null);
-  protected readonly attackersPerTeam = signal(1);
-  protected readonly attackAbsencePenalty = signal(50);
+  protected readonly attackerThreshold = signal<number | null>(this.p.attackerThreshold);
+  protected readonly attackersPerTeam = signal(this.p.attackersPerTeam);
+  protected readonly attackAbsencePenalty = signal(this.p.attackAbsencePenalty);
 
   // Paramètres passe
-  protected readonly setterThreshold = signal<number | null>(null);
-  protected readonly setterAbsencePenalty = signal(300);
+  protected readonly setterThreshold = signal<number | null>(this.p.setterThreshold);
+  protected readonly setterAbsencePenalty = signal(this.p.setterAbsencePenalty);
 
   // Paramètres généraux
-  protected readonly globalMeanPenaltyFactor = signal(1.5);
-  protected readonly teamDefensePenaltyFactor = signal(1);
+  protected readonly globalMeanPenaltyFactor = signal(this.p.globalMeanPenaltyFactor);
+  protected readonly teamDefensePenaltyFactor = signal(this.p.teamDefensePenaltyFactor);
 
-  protected readonly togetherPairsList = signal<PlayerPair[]>([]);
-  protected readonly apartPairsList = signal<PlayerPair[]>([]);
+  protected readonly togetherPairsList = signal<PlayerPair[]>(this.p.togetherPairsList);
+  protected readonly apartPairsList = signal<PlayerPair[]>(this.p.apartPairsList);
+
+  constructor() {
+    effect(() => {
+      const params: PersistedParams = {
+        targetTeamSize: this.targetTeamSize(),
+        forceEvenTeams: this.forceEvenTeams(),
+        populationSize: this.populationSize(),
+        generations: this.generations(),
+        mutationRate: this.mutationRate(),
+        attackerThreshold: this.attackerThreshold(),
+        attackersPerTeam: this.attackersPerTeam(),
+        attackAbsencePenalty: this.attackAbsencePenalty(),
+        setterThreshold: this.setterThreshold(),
+        setterAbsencePenalty: this.setterAbsencePenalty(),
+        globalMeanPenaltyFactor: this.globalMeanPenaltyFactor(),
+        teamDefensePenaltyFactor: this.teamDefensePenaltyFactor(),
+        togetherPairsList: this.togetherPairsList(),
+        apartPairsList: this.apartPairsList(),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(params));
+    });
+
+    effect(() => {
+      localStorage.setItem(STORAGE_KEY_TEAMS, JSON.stringify(this.teams()));
+    });
+  }
 
   run(): void {
     const selectedPlayers = this.players();
