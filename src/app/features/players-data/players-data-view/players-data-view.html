@@ -59,7 +59,7 @@
                 (click)="$event.stopPropagation()"
                 (change)="updateName(player.id, $event)" />
             </td>
-            <td class="col-gender">
+            <td class="col-gender" data-label="Genre">
               <select
                 [value]="player.gender"
                 (click)="$event.stopPropagation()"
@@ -70,22 +70,22 @@
                 <option value="A">A</option>
               </select>
             </td>
-            <td class="col-stat">
+            <td class="col-stat" data-label="Note">
               <input type="number" min="1" max="10" [value]="player.global_impact"
                 (click)="$event.stopPropagation()"
                 (change)="updateStat(player.id, 'global_impact', $event)" />
             </td>
-            <td class="col-stat">
+            <td class="col-stat" data-label="Att.">
               <input type="number" min="1" max="10" [value]="player.attack"
                 (click)="$event.stopPropagation()"
                 (change)="updateStat(player.id, 'attack', $event)" />
             </td>
-            <td class="col-stat">
+            <td class="col-stat" data-label="Passe">
               <input type="number" min="1" max="10" [value]="player.set"
                 (click)="$event.stopPropagation()"
                 (change)="updateStat(player.id, 'set', $event)" />
             </td>
-            <td class="col-stat">
+            <td class="col-stat" data-label="Déf.">
               <input type="number" min="1" max="10" [value]="player.defense"
                 (click)="$event.stopPropagation()"
                 (change)="updateStat(player.id, 'defense', $event)" />
