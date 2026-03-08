@@ -65,7 +65,7 @@ export class PlayerDataService {
       });
       this._players.set(players);
       this.persist(players);
-      this._selectedPlayerIds.set(new Set());
+      this._selectedPlayerIds.set(new Set(players.map(p => p.id)));
       this.persistSelected(new Set());
     };
     reader.readAsText(file, 'UTF-8');
@@ -88,6 +88,10 @@ export class PlayerDataService {
     const newPlayer: Player = { id: nextId, name: '', gender: 'H', global_impact: 5, attack: 5, set: 5, defense: 5 };
     const updated = [...players, newPlayer];
     this._players.set(updated);
+    const selectedIds = new Set(this._selectedPlayerIds());
+    selectedIds.add(nextId)
+    this._selectedPlayerIds.set(selectedIds)
+    this.persistSelected(selectedIds);
     this.persist(updated);
   }
 
