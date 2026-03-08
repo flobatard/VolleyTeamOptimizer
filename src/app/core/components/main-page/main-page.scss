@@ -32,10 +32,19 @@
 }
 
 .logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--color-white);
   letter-spacing: -0.01em;
+
+  img {
+    height: 60px;
+    width: 60px;
+    object-fit: contain;
+  }
 
   @media (max-width: 480px) {
     font-size: 1.1rem;
