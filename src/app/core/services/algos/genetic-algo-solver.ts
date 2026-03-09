@@ -55,7 +55,7 @@ interface GameConstants {
 
 export class GeneticAlgoSolver {
 
-  public generateBalancedTeams(players: Player[], targetTeamSize: number, params: GAParams = {}): Player[][] {
+  public generateBalancedTeams(players: Player[], targetTeamSize: number, params: GAParams = {}, onProgress?: (percent: number) => void): Player[][] {
     const POPULATION_SIZE = params.POPULATION_SIZE || 200;
     const GENERATIONS = params.GENERATIONS || 1000;
     const MUTATION_RATE = params.MUTATION_RATE || 0.7;
@@ -84,7 +84,11 @@ export class GeneticAlgoSolver {
     });
 
     // 4. Boucle d'évolution
+    const reportInterval = Math.max(1, Math.floor(GENERATIONS / 20));
     for (let gen = 0; gen < GENERATIONS; gen++) {
+      if (onProgress && gen % reportInterval === 0) {
+        onProgress(Math.round((gen / GENERATIONS) * 100));
+      }
       // Le tri est maintenant ultra rapide car le 'totalCost' est déjà calculé !
       population.sort((a, b) => a.totalCost - b.totalCost);
 

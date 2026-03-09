@@ -71,6 +71,7 @@ export class GeneticSolverComponent {
   readonly teams = signal<Player[][]>(loadTeams());
   readonly isRunning = signal<boolean>(false);
   readonly workerError = signal<string | null>(null);
+  readonly progress = signal<number>(0);
 
   private readonly p = loadParams();
 
@@ -130,16 +131,22 @@ export class GeneticSolverComponent {
     if (selectedPlayers.length === 0) return;
     this.isRunning.set(true);
     this.workerError.set(null);
+    this.progress.set(0);
     const worker = new Worker(new URL('../workers/genetic-algo.worker', import.meta.url));
 
     worker.onmessage = ({ data }) => {
-      if (data.type === 'error') {
+      if (data.type === 'progress') {
+        this.progress.set(data.percent);
+      } else if (data.type === 'error') {
         this.workerError.set(data.message);
+        this.isRunning.set(false);
+        worker.terminate();
       } else {
+        this.progress.set(100);
         this.teams.set(data.teams);
+        this.isRunning.set(false);
+        worker.terminate();
       }
-      this.isRunning.set(false);
-      worker.terminate();
     };
 
     worker.onerror = (error) => {

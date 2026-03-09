@@ -33,6 +33,13 @@
     </button>
   </div>
 
+  @if (isRunning()) {
+    <div class="progress-bar">
+      <div class="progress-bar__fill" [style.width.%]="progress()"></div>
+      <span class="progress-bar__label">{{ progress() }}%</span>
+    </div>
+  }
+
   @if (workerError()) {
     <div class="error">
       Erreur lors du calcul : {{ workerError() }}
