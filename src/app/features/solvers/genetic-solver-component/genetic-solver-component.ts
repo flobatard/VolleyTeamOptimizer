@@ -70,6 +70,7 @@ export class GeneticSolverComponent {
   protected readonly players = this.playerDataService.selectedPlayers;
   readonly teams = signal<Player[][]>(loadTeams());
   readonly isRunning = signal<boolean>(false);
+  readonly workerError = signal<string | null>(null);
 
   private readonly p = loadParams();
 
@@ -128,10 +129,21 @@ export class GeneticSolverComponent {
     const teamSize = this.targetTeamSize();
     if (selectedPlayers.length === 0) return;
     this.isRunning.set(true);
+    this.workerError.set(null);
     const worker = new Worker(new URL('../workers/genetic-algo.worker', import.meta.url));
 
     worker.onmessage = ({ data }) => {
-      this.teams.set(data);
+      if (data.type === 'error') {
+        this.workerError.set(data.message);
+      } else {
+        this.teams.set(data.teams);
+      }
+      this.isRunning.set(false);
+      worker.terminate();
+    };
+
+    worker.onerror = (error) => {
+      this.workerError.set(error.message ?? 'Erreur inattendue dans le calcul');
       this.isRunning.set(false);
       worker.terminate();
     };

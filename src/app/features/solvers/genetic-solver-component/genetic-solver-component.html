@@ -33,6 +33,12 @@
     </button>
   </div>
 
+  @if (workerError()) {
+    <div class="error">
+      Erreur lors du calcul : {{ workerError() }}
+    </div>
+  }
+
   <details class="advanced-options">
     <summary class="advanced-options__summary">Options avancées</summary>
 

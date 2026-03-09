@@ -1,6 +1,8 @@
 import { computed, Injectable, signal } from '@angular/core';
 import { Player } from '../models/player';
 
+type CsvImportResult = { success: true; count: number } | { success: false; error: string };
+
 const STORAGE_KEY = 'VTO_volleyball_players';
 const STORAGE_KEY_SELECTED = 'VTO_volleyball_selected_ids';
 
@@ -13,6 +15,8 @@ export class PlayerDataService {
 
   private readonly _selectedPlayerIds = signal<Set<number>>(this.loadSelectedFromStorage());
   readonly selectedPlayerIds = this._selectedPlayerIds.asReadonly();
+
+  readonly csvImportResult = signal<CsvImportResult | null>(null);
 
   readonly selectedPlayers = computed(() =>
     this._players().filter((p) => this._selectedPlayerIds().has(p.id)),
@@ -49,24 +53,49 @@ export class PlayerDataService {
   loadFromCsv(file: File): void {
     const reader = new FileReader();
     reader.onload = (event) => {
-      const text = event.target?.result as string;
-      const lines = text.split('\n').filter((l) => l.trim().length > 0);
-      const players: Player[] = lines.slice(1).map((line, index) => {
-        const [nom, genre, note_globale, attaque, passe, defense] = line.split(';');
-        return {
-          id: index,
-          name: nom.trim(),
-          gender: genre.trim(),
-          global_impact: Number(note_globale),
-          attack: Number(attaque),
-          set: Number(passe),
-          defense: Number(defense),
-        };
-      });
-      this._players.set(players);
-      this.persist(players);
-      this._selectedPlayerIds.set(new Set(players.map(p => p.id)));
-      this.persistSelected(new Set());
+      try {
+        const text = event.target?.result as string;
+        const lines = text.split('\n').filter((l) => l.trim().length > 0);
+        const dataLines = lines.slice(1);
+        if (dataLines.length === 0) {
+          this.csvImportResult.set({ success: false, error: 'Le fichier ne contient aucun joueur.' });
+          return;
+        }
+        const players: Player[] = [];
+        for (let i = 0; i < dataLines.length; i++) {
+          const parts = dataLines[i].split(';');
+          if (parts.length < 6) {
+            this.csvImportResult.set({ success: false, error: `Ligne ${i + 2} : format invalide (${parts.length} colonnes au lieu de 6).` });
+            return;
+          }
+          const [nom, genre, note_globale, attaque, passe, defense] = parts;
+          const stats = [Number(note_globale), Number(attaque), Number(passe), Number(defense)];
+          if (stats.some(isNaN)) {
+            this.csvImportResult.set({ success: false, error: `Ligne ${i + 2} (${nom.trim()}) : valeur numérique invalide.` });
+            return;
+          }
+          players.push({
+            id: i,
+            name: nom.trim(),
+            gender: genre.trim(),
+            global_impact: stats[0],
+            attack: stats[1],
+            set: stats[2],
+            defense: stats[3],
+          });
+        }
+        this._players.set(players);
+        this.persist(players);
+        const selectedIds = new Set(players.map(p => p.id));
+        this._selectedPlayerIds.set(selectedIds);
+        this.persistSelected(selectedIds);
+        this.csvImportResult.set({ success: true, count: players.length });
+      } catch {
+        this.csvImportResult.set({ success: false, error: 'Erreur inattendue lors de la lecture du fichier.' });
+      }
+    };
+    reader.onerror = () => {
+      this.csvImportResult.set({ success: false, error: 'Impossible de lire le fichier.' });
     };
     reader.readAsText(file, 'UTF-8');
   }

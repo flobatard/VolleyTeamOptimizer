@@ -3,9 +3,12 @@
 import { GeneticAlgoSolver } from '../../../core/services/algos/genetic-algo-solver';
 
 addEventListener('message', ({ data }) => {
-  const { players, targetTeamSize, params } = data;
-  let solver;
-  solver = new GeneticAlgoSolver();
-  const teams = solver.generateBalancedTeams(players, targetTeamSize, params );
-  postMessage(teams);
+  try {
+    const { players, targetTeamSize, params } = data;
+    const solver = new GeneticAlgoSolver();
+    const teams = solver.generateBalancedTeams(players, targetTeamSize, params);
+    postMessage({ type: 'success', teams });
+  } catch (error) {
+    postMessage({ type: 'error', message: error instanceof Error ? error.message : 'Erreur inconnue dans le calcul' });
+  }
 });

@@ -11,6 +11,7 @@ export class PlayersDataView {
   private readonly playerDataService = inject(PlayerDataService);
   protected readonly players = this.playerDataService.players;
   protected readonly selectedPlayerIds = this.playerDataService.selectedPlayerIds;
+  protected readonly csvImportResult = this.playerDataService.csvImportResult;
 
   protected readonly allSelected = computed(
     () => this.players().length > 0 && this.selectedPlayerIds().size === this.players().length,

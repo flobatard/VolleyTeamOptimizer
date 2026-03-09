@@ -1,4 +1,16 @@
 <div class="players-view">
+  @if (csvImportResult(); as result) {
+    @if (result.success) {
+      <div class="import-feedback import-feedback--success">
+        {{ result.count }} joueur{{ result.count > 1 ? 's' : '' }} importé{{ result.count > 1 ? 's' : '' }} avec succès.
+      </div>
+    } @else {
+      <div class="import-feedback import-feedback--error">
+        Erreur d'import : {{ result.error }}
+      </div>
+    }
+  }
+
   <div class="toolbar">
     <input
       type="file"
