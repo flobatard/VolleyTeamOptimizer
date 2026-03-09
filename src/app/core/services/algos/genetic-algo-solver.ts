@@ -251,7 +251,7 @@ export class GeneticAlgoSolver {
     if (players.length === 0) throw new Error("La liste des joueurs est vide.");
     const values = players.map(player => func(player)).sort((a, b) => a - b);
     const middle = values.length % 2 === 0 ? Math.round(values.length / 2) : Math.floor(values.length / 2);
-    return values.length % 2 === 0 ? (values[middle] + values[middle + 1]) / 2 : values[middle];
+    return values.length % 2 === 0 ? (values[middle] + values[middle - 1]) / 2 : values[middle];
   }
 
   private shuffleArray(array: Player[]): Player[] {
