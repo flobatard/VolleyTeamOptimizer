@@ -87,7 +87,7 @@
           <div class="param-item">
             <label class="param-label">
               Seuil attaquant
-              <span class="param-tooltip" data-tip="Note d'attaque minimale pour qu'un joueur soit considéré comme attaquant. Laissez vide pour utiliser la médiane automatique.">?</span>
+              <span class="param-tooltip" data-tip="Note d'attaque minimale pour qu'un joueur soit considéré comme attaquant. Laissez vide pour utiliser la médiane automatiquement.">?</span>
             </label>
             <input class="param-input" type="number" min="0" max="10" step="0.5"
               placeholder="Auto (médiane)"
@@ -119,10 +119,10 @@
           <div class="param-item">
             <label class="param-label">
               Seuil passeur
-              <span class="param-tooltip" data-tip="Note de passe minimale pour qu'un joueur soit considéré comme passeur. Laissez vide pour utiliser la médiane automatique.">?</span>
+              <span class="param-tooltip" data-tip="Note de passe minimale pour qu'un joueur soit considéré comme passeur. Laissez vide pour utiliser la médiane + 0.5 automatiquement.">?</span>
             </label>
             <input class="param-input" type="number" min="0" max="10" step="0.5"
-              placeholder="Auto (médiane)"
+              placeholder="Auto (médiane + 0.5)"
               [ngModel]="setterThreshold()"
               (ngModelChange)="setterThreshold.set($event === '' || $event === null ? null : +$event)" />
           </div>
