@@ -6,10 +6,10 @@ addEventListener('message', ({ data }) => {
   try {
     const { players, targetTeamSize, params } = data;
     const solver = new GeneticAlgoSolver();
-    const teams = solver.generateBalancedTeams(players, targetTeamSize, params, (percent) => {
+    const { teams, convergence } = solver.generateBalancedTeams(players, targetTeamSize, params, (percent) => {
       postMessage({ type: 'progress', percent });
     });
-    postMessage({ type: 'success', teams });
+    postMessage({ type: 'success', teams, convergence });
   } catch (error) {
     postMessage({ type: 'error', message: error instanceof Error ? error.message : 'Erreur inconnue dans le calcul' });
   }

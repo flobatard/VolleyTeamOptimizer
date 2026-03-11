@@ -56,7 +56,7 @@ interface GameConstants {
 
 export class GeneticAlgoSolver {
 
-  public generateBalancedTeams(players: Player[], targetTeamSize: number, params: GAParams = {}, onProgress?: (percent: number) => void): Player[][] {
+  public generateBalancedTeams(players: Player[], targetTeamSize: number, params: GAParams = {}, onProgress?: (percent: number) => void): { teams: Player[][], convergence: { generation: number, bestCost: number }[] } {
     const POPULATION_SIZE = params.POPULATION_SIZE || 200;
     const GENERATIONS = params.GENERATIONS || 1000;
     const MUTATION_RATE = params.MUTATION_RATE || 0.7;
@@ -85,6 +85,7 @@ export class GeneticAlgoSolver {
     });
 
     // 4. Boucle d'évolution
+    const convergence: { generation: number, bestCost: number }[] = [];
     const reportInterval = Math.max(1, Math.floor(GENERATIONS / 20));
     for (let gen = 0; gen < GENERATIONS; gen++) {
       if (onProgress && gen % reportInterval === 0) {
@@ -92,6 +93,7 @@ export class GeneticAlgoSolver {
       }
       // Le tri est maintenant ultra rapide car le 'totalCost' est déjà calculé !
       population.sort((a, b) => a.totalCost - b.totalCost);
+      convergence.push({ generation: gen, bestCost: population[0].totalCost });
 
       const newPopulation: EvaluatedGenome[] = [];
       
@@ -125,7 +127,7 @@ export class GeneticAlgoSolver {
 
     // A la fin, on trie une dernière fois pour être sûr d'avoir le meilleur à l'index 0
     population.sort((a, b) => a.totalCost - b.totalCost);
-    return this.chunkIntoTeams(population[0].genome, numTeams);
+    return { teams: this.chunkIntoTeams(population[0].genome, numTeams), convergence: convergence };
   }
 
   // --- Fonctions d'évaluation ---
