@@ -40,10 +40,10 @@ export function estimateTeamQuality(team: Player[], attackersPTeam: number | und
 
   // --- Score global pondéré ---
   const value = Math.round(
-    globalScore  * 0.25 +
-    defenseScore * 0.25 +
-    attackScore  * 0.25 +
-    setterScore  * 0.25
+    globalScore  * 0.40 +
+    defenseScore * 0.20 +
+    attackScore  * 0.20 +
+    setterScore  * 0.20
   );
 
   return {
