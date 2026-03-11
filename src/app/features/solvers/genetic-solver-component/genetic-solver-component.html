@@ -190,8 +190,11 @@
                 <span class="player-meta">{{ player.gender }} · {{ player.global_impact }}<br/> {{ player.attack }} · {{player.set}} · {{ player.defense }} </span>
               </li>
             }
-            <span>Score global: {{team.value}}</span>
           </ul>
+          <div class="team-card__score">
+            <span class="team-card__score-label">Score global</span>
+            <span class="team-card__score-value">{{ team.value }}</span>
+          </div>
         </div>
       }
     </div>

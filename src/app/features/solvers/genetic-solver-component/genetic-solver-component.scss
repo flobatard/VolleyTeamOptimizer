@@ -286,6 +286,26 @@
     opacity: 0.75;
   }
 
+  &__score {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    background: var(--color-bg-subtle);
+    border-top: 1px solid var(--color-border);
+    font-size: 0.8rem;
+  }
+
+  &__score-label {
+    color: var(--color-text-secondary);
+    font-weight: 500;
+  }
+
+  &__score-value {
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+
   &__players {
     list-style: none;
     margin: 0;
