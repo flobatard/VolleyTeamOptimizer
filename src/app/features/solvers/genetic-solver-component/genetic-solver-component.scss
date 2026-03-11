@@ -85,6 +85,12 @@
   text-align: center;
 }
 
+.player-count {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
 .run-btn {
   padding: 0.625rem 1.5rem;
   background: var(--color-accent);
