@@ -83,9 +83,8 @@ export class GeneticSolverComponent {
     const maxCost = Math.max(...data.map(d => d.bestCost));
     const minCost = Math.min(...data.map(d => d.bestCost));
     const range = maxCost - minCost;
-    if (range === 0) return null;
     const toX = (gen: number) => 60 + (gen / maxGen) * 550;
-    const toY = (cost: number) => 170 - ((cost - minCost) / range) * 160;
+    const toY = (cost: number) => range === 0 ? 90 : 170 - ((cost - minCost) / range) * 160;
     const path = data.map((d, i) =>
       `${i === 0 ? 'M' : 'L'}${toX(d.generation).toFixed(1)},${toY(d.bestCost).toFixed(1)}`
     ).join(' ');
