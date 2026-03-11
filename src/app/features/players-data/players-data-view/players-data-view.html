@@ -45,6 +45,9 @@
   </div>
 
   @if (players().length > 0) {
+    <div class="selection-count">
+      {{ selectedPlayerIds().size }} / {{ players().length }} joueur{{ players().length > 1 ? 's' : '' }} sélectionné{{ selectedPlayerIds().size > 1 ? 's' : '' }}
+    </div>
     <table class="players-table">
       <thead>
         <tr>
