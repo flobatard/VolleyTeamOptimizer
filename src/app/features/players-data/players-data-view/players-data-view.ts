@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { PlayerDataService } from '../../../core/services/player-data.service';
 
 @Component({
@@ -12,6 +12,12 @@ export class PlayersDataView {
   protected readonly players = this.playerDataService.players;
   protected readonly selectedPlayerIds = this.playerDataService.selectedPlayerIds;
   protected readonly csvImportResult = this.playerDataService.csvImportResult;
+
+  protected readonly searchQuery = signal('');
+  protected readonly filteredPlayers = computed(() => {
+    const q = this.searchQuery().trim().toLowerCase();
+    return q ? this.players().filter(p => p.name.toLowerCase().includes(q)) : this.players();
+  });
 
   protected readonly allSelected = computed(
     () => this.players().length > 0 && this.selectedPlayerIds().size === this.players().length,

@@ -11,6 +11,16 @@
     }
   }
 
+  @if (players().length > 0) {
+    <input
+      class="search-input"
+      type="search"
+      placeholder="Rechercher un joueur..."
+      [value]="searchQuery()"
+      (input)="searchQuery.set($any($event.target).value)"
+    />
+  }
+
   <div class="toolbar">
     <input
       type="file"
@@ -56,7 +66,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (player of players(); track player.name) {
+        @for (player of filteredPlayers(); track player.name) {
           <tr [class.selected]="selectedPlayerIds().has(player.id)" (click)="toggleSelection(player.id)">
             <td class="col-select">
               <input
