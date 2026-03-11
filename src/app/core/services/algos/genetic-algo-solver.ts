@@ -146,7 +146,7 @@ export class GeneticAlgoSolver {
       medianSetter,
       meanSetter: totalSet / players.length,
       medianAttacker,
-      targetMeanAttack: totalAttack / players.length,
+      targetMeanAttack: totalAttack / numTeams,
       attackerThreshold: params.ATTACKER_THRESHOLD ?? medianAttacker,
       attackersPerTeam: params.ATTACKERS_PER_TEAM ?? 1,
       attackAbsencePenalty: params.ATTACK_ABSENCE_PENALTY ?? 50,
@@ -160,16 +160,19 @@ export class GeneticAlgoSolver {
     };
   }
 
-  private calculateCost(genome: Player[], numTeams: number, constants: GameConstants): {totalCost: number, teamsCost: {team: Player[], cost: number}[]} {
+  private calculateCost(genome: Player[], numTeams: number, constants: GameConstants): {totalCost: number, detailCost: {gender: number, teamQualities: number, pairPenalities: number}, teamsCost: {team: Player[], cost: number}[], detailsTeamsCost: {team: Player[], global: number, defense: number, set: number, attack: number, attackDetails: {abscencePenalty: number, meanPenalty: number}}[]} {
     const teams = this.chunkIntoTeams(genome, numTeams);
     let totalCost = 0;
+    const detailCost : {gender: number, teamQualities: number, pairPenalities: number} = {gender: 0, teamQualities: 0, pairPenalities: 0}
 
     let max_female = 0, min_female = genome.length;
 
     let teamsCost : {team: Player[], cost: number}[] = []; 
+    let detailsTeamsCost : {team: Player[], global: number, defense: number, set: number, attack: number, attackDetails: {abscencePenalty: number, meanPenalty: number}}[] = []
 
     // --- 2. Évaluation des équipes ---
     for (const team of teams) {
+      let detailTeamCost = {team: team, global: 0, defense: 0, set: 0, attack: 0, attackDetails: {abscencePenalty: 0, meanPenalty: 0}}
       let teamCost = 0;
       
       const teamMeanGlobal = team.reduce((sum, p) => sum + p.global_impact, 0) / team.length;
@@ -186,17 +189,38 @@ export class GeneticAlgoSolver {
       if (setterOrAttackeInTeam < 1 + constants.attackersPerTeam) teamCost += constants.attackAbsencePenalty;
 
       // Utilisation du carré (Math.pow) pour lisser les écarts et pénaliser plus durement les gros déséquilibres
-      teamCost += Math.pow(teamMeanGlobal - constants.targetMeanGlobal, 2) * (genome.length / numTeams) * constants.globalMeanPenaltyFactor;
-      teamCost += Math.pow(constants.targetTeamDefense - teamDefense, 2) * constants.teamDefensePenaltyFactor;
+      const globalCost = Math.pow(teamMeanGlobal - constants.targetMeanGlobal, 2) * (genome.length / numTeams) * constants.globalMeanPenaltyFactor;
+      
+      const defenseCost = Math.pow(constants.targetTeamDefense - teamDefense, 2) * constants.teamDefensePenaltyFactor;
+
+      teamCost += globalCost
+      teamCost += defenseCost
+
+      let setterCost = 0
 
       // Passeur
-      if (constants.setterThreshold > teamSetter) teamCost += constants.setterAbsencePenalty;
-      teamCost += Math.max(0, (constants.meanSetter - teamSetter)) * (genome.length / numTeams);
+      if (constants.setterThreshold > teamSetter) setterCost += constants.setterAbsencePenalty;
+      setterCost += Math.max(0, (constants.meanSetter - teamSetter)) * (genome.length / numTeams);
+
+      teamCost += setterCost
+
+      let attackCost = 0
+      let abscenceAttackPenalty = 0
+      
 
       // Attaquant
-      if (constants.attackerThreshold > bestAttack) teamCost += constants.attackAbsencePenalty;
-      if (attackersInTeam < constants.attackersPerTeam) teamCost += constants.attackAbsencePenalty * (constants.attackersPerTeam - attackersInTeam);
-      teamCost += Math.pow(constants.targetMeanAttack - teamAttack, 2) * (genome.length / numTeams);
+      if (constants.attackerThreshold > bestAttack) abscenceAttackPenalty += constants.attackAbsencePenalty;
+      if (attackersInTeam < constants.attackersPerTeam) abscenceAttackPenalty += constants.attackAbsencePenalty * (constants.attackersPerTeam - attackersInTeam);
+      const meanAttackPenalty = Math.pow(constants.targetMeanAttack - teamAttack, 2) * (genome.length / numTeams);
+      attackCost = meanAttackPenalty + abscenceAttackPenalty
+      const attackDetailsCost : {abscencePenalty: number, meanPenalty: number} = {abscencePenalty: abscenceAttackPenalty, meanPenalty: meanAttackPenalty}
+      teamCost += attackCost
+
+      detailTeamCost.attack = attackCost
+      detailTeamCost.set = setterCost
+      detailTeamCost.defense = defenseCost
+      detailTeamCost.global = globalCost
+      detailTeamCost.attackDetails = attackDetailsCost
 
       // Mixité
       const females = team.filter(p => p.gender === 'F').length;
@@ -205,6 +229,7 @@ export class GeneticAlgoSolver {
 
       totalCost += teamCost;
       teamsCost.push({team: team, cost: teamCost})
+      detailsTeamsCost.push(detailTeamCost)
     }
 
     const teamsQualities = []
@@ -214,13 +239,16 @@ export class GeneticAlgoSolver {
     }
 
     const varianceTeamQuality = calculateEstimatedTeamVariance(teamsQualities, (team) => team.value)
-
+    detailCost.teamQualities = varianceTeamQuality
+    
     totalCost += varianceTeamQuality
 
     if (max_female - min_female > 1) {
       totalCost += 100 * numTeams;
+      detailCost.gender = 100 * numTeams
     }
 
+    let pairPenalities = 0;
     // Contraintes soft sur les paires de joueurs
     if (constants.togetherPairs.length > 0 || constants.apartPairs.length > 0) {
       const playerTeamIndex = new Map<number, number>();
@@ -230,6 +258,7 @@ export class GeneticAlgoSolver {
         const t1 = playerTeamIndex.get(pair.player1Id);
         const t2 = playerTeamIndex.get(pair.player2Id);
         if (t1 !== undefined && t2 !== undefined && t1 !== t2) {
+          pairPenalities += constants.pairConstraintPenalty;
           totalCost += constants.pairConstraintPenalty;
         }
       }
@@ -238,12 +267,13 @@ export class GeneticAlgoSolver {
         const t1 = playerTeamIndex.get(pair.player1Id);
         const t2 = playerTeamIndex.get(pair.player2Id);
         if (t1 !== undefined && t2 !== undefined && t1 === t2) {
+          pairPenalities += constants.pairConstraintPenalty;
           totalCost += constants.pairConstraintPenalty;
         }
       }
     }
 
-    return {totalCost: totalCost, teamsCost: teamsCost};
+    return {totalCost: totalCost, detailCost: detailCost, teamsCost: teamsCost, detailsTeamsCost: detailsTeamsCost};
   }
 
   // --- Utilitaires ---

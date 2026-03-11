@@ -1,4 +1,4 @@
-import { Component, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PlayerDataService } from '../../../core/services/player-data.service';
 import { Player } from '../../../core/models/player';
@@ -74,6 +74,28 @@ export class GeneticSolverComponent {
   readonly isRunning = signal<boolean>(false);
   readonly workerError = signal<string | null>(null);
   readonly progress = signal<number>(0);
+  readonly convergence = signal<{ generation: number, bestCost: number }[]>([]);
+
+  readonly convergenceSvgData = computed(() => {
+    const data = this.convergence();
+    if (data.length < 2) return null;
+    const maxGen = data[data.length - 1].generation;
+    const maxCost = Math.max(...data.map(d => d.bestCost));
+    const minCost = Math.min(...data.map(d => d.bestCost));
+    const range = maxCost - minCost;
+    if (range === 0) return null;
+    const toX = (gen: number) => 60 + (gen / maxGen) * 550;
+    const toY = (cost: number) => 170 - ((cost - minCost) / range) * 160;
+    const path = data.map((d, i) =>
+      `${i === 0 ? 'M' : 'L'}${toX(d.generation).toFixed(1)},${toY(d.bestCost).toFixed(1)}`
+    ).join(' ');
+    return {
+      path,
+      maxCost: Math.round(maxCost),
+      minCost: Math.round(minCost),
+      finalCost: Math.round(data[data.length - 1].bestCost),
+    };
+  });
 
   private readonly p = loadParams();
 
@@ -143,6 +165,7 @@ export class GeneticSolverComponent {
     this.isRunning.set(true);
     this.workerError.set(null);
     this.progress.set(0);
+    this.convergence.set([]);
     const worker = new Worker(new URL('../workers/genetic-algo.worker', import.meta.url));
 
     worker.onmessage = ({ data }) => {
@@ -159,6 +182,7 @@ export class GeneticSolverComponent {
         
         const estimatedTeams = data.teams.map((t : Player[]) => estimateTeamQuality(t, this.attackersPerTeam() ?? 1, attackerThreshold, setterThreshold ))
         this.teams.set(estimatedTeams);
+        this.convergence.set(data.convergence ?? []);
         this.isRunning.set(false);
         worker.terminate();
       }

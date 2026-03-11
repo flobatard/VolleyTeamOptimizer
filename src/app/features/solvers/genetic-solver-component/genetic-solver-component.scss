@@ -256,6 +256,23 @@
   gap: 16px;
 }
 
+// ── Graphe de convergence ─────────────────────────────────────────────────────
+
+.convergence-chart {
+  &__svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  &__final {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    text-align: right;
+  }
+}
+
 // ── Actions équipes ───────────────────────────────────────────────────────────
 
 .teams-actions {
