@@ -48,6 +48,18 @@
     <div class="selection-count">
       {{ selectedPlayerIds().size }} / {{ players().length }} joueur{{ players().length > 1 ? 's' : '' }} sélectionné{{ selectedPlayerIds().size > 1 ? 's' : '' }}
     </div>
+    <div class="sort-bar">
+      Trier par :
+      <button class="sort-pill" [class.sort-pill--active]="sortField() === 'name'" (click)="setSort('name')">
+        Nom @if (sortField() === 'name') { {{ sortIcon('name') }} }
+      </button>
+      <button class="sort-pill" [class.sort-pill--active]="sortField() === 'selected'" (click)="setSort('selected')">
+        Sélection @if (sortField() === 'selected') { {{ sortIcon('selected') }} }
+      </button>
+      <button class="sort-pill" [class.sort-pill--active]="sortField() === 'id'" (click)="setSort('id')">
+        Par défaut @if (sortField() === 'id') { {{ sortIcon('id') }} }
+      </button>
+    </div>
     <table class="players-table">
       <thead>
         <tr>
