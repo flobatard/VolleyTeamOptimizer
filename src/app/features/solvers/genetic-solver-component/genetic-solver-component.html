@@ -181,15 +181,16 @@
         <div class="team-card">
           <div class="team-card__header">
             Équipe {{ $index + 1 }}
-            <span class="team-card__count">{{ team.length }} joueurs</span>
+            <span class="team-card__count">{{ team.team.length }} joueurs</span>
           </div>
           <ul class="team-card__players">
-            @for (player of team; track player.name) {
+            @for (player of team.team; track player.name) {
               <li class="player-row">
                 <span class="player-name">{{ player.name }}</span>
                 <span class="player-meta">{{ player.gender }} · {{ player.global_impact }}<br/> {{ player.attack }} · {{player.set}} · {{ player.defense }} </span>
               </li>
             }
+            <span>Score global: {{team.value}}</span>
           </ul>
         </div>
       }

@@ -1,5 +1,6 @@
 import { Player } from "../../models/player";
 import { PlayerPair } from "../../models/player-pair";
+import { EstimatedTeam, estimateTeamQuality } from "../teams-model.service";
 
 export interface GAParams {
   POPULATION_SIZE?: number;
@@ -134,8 +135,8 @@ export class GeneticAlgoSolver {
     const totalDefense = players.reduce((sum, p) => sum + p.defense, 0);
     const totalSet = players.reduce((sum, p) => sum + p.set, 0);
     const totalAttack = players.reduce((sum, p) => sum + p.attack, 0);
-    const medianAttacker = this.calculateMedian(players, (p: Player) => p.attack);
-    const medianSetter = this.calculateMedian(players, (p: Player) => p.set);
+    const medianAttacker = calculatePlayerMedian(players, (p: Player) => p.attack);
+    const medianSetter = calculatePlayerMedian(players, (p: Player) => p.set);
 
     return {
       targetMeanGlobal: totalGlobal / players.length,
@@ -147,7 +148,7 @@ export class GeneticAlgoSolver {
       attackerThreshold: params.ATTACKER_THRESHOLD ?? medianAttacker,
       attackersPerTeam: params.ATTACKERS_PER_TEAM ?? 1,
       attackAbsencePenalty: params.ATTACK_ABSENCE_PENALTY ?? 50,
-      setterThreshold: params.SETTER_THRESHOLD ?? medianSetter,
+      setterThreshold: params.SETTER_THRESHOLD ?? medianSetter + 0.5,
       setterAbsencePenalty: params.SETTER_ABSENCE_PENALTY ?? 300,
       globalMeanPenaltyFactor: params.GLOBAL_MEAN_PENALTY_FACTOR ?? 1.5,
       teamDefensePenaltyFactor: params.TEAM_DEFENSE_PENALTY_FACTOR ?? 1,
@@ -187,7 +188,7 @@ export class GeneticAlgoSolver {
       teamCost += Math.pow(constants.targetTeamDefense - teamDefense, 2) * constants.teamDefensePenaltyFactor;
 
       // Passeur
-      if (constants.setterThreshold >= teamSetter) teamCost += constants.setterAbsencePenalty;
+      if (constants.setterThreshold > teamSetter) teamCost += constants.setterAbsencePenalty;
       teamCost += Math.max(0, (constants.meanSetter - teamSetter)) * (genome.length / numTeams);
 
       // Attaquant
@@ -203,6 +204,16 @@ export class GeneticAlgoSolver {
       totalCost += teamCost;
       teamsCost.push({team: team, cost: teamCost})
     }
+
+    const teamsQualities = []
+    for (const team of teams) {
+      const estimatedTeam = estimateTeamQuality(team, constants.attackersPerTeam, constants.attackerThreshold, constants.setterThreshold)
+      teamsQualities.push(estimatedTeam)
+    }
+
+    const varianceTeamQuality = calculateEstimatedTeamVariance(teamsQualities, (team) => team.value)
+
+    totalCost += varianceTeamQuality
 
     if (max_female - min_female > 1) {
       totalCost += 100 * numTeams;
@@ -251,12 +262,7 @@ export class GeneticAlgoSolver {
     return genome;
   }
 
-  private calculateMedian(players: Player[], func: (p: Player) => number): number {
-    if (players.length === 0) throw new Error("La liste des joueurs est vide.");
-    const values = players.map(player => func(player)).sort((a, b) => a - b);
-    const middle = values.length % 2 === 0 ? Math.round(values.length / 2) : Math.floor(values.length / 2);
-    return values.length % 2 === 0 ? (values[middle] + values[middle - 1]) / 2 : values[middle];
-  }
+
 
   private shuffleArray(array: Player[]): Player[] {
     for (let i = array.length - 1; i > 0; i--) {
@@ -265,4 +271,22 @@ export class GeneticAlgoSolver {
     }
     return array;
   }
+}
+
+export function calculatePlayerMedian(players: Player[], func: (p: Player) => number): number {
+  if (players.length === 0) throw new Error("La liste des joueurs est vide.");
+  const values = players.map(player => func(player)).sort((a, b) => a - b);
+  const middle = values.length % 2 === 0 ? Math.round(values.length / 2) : Math.floor(values.length / 2);
+  return values.length % 2 === 0 ? (values[middle] + values[middle - 1]) / 2 : values[middle];
+}
+
+
+export function calculateEstimatedTeamVariance(teams: EstimatedTeam[], func: (team : EstimatedTeam) => number) : number {
+  const values = teams.map(team => func(team))
+  const mean =(values.reduce((sum, p) => sum + p))/values.length
+  const squaredDiffs = values.map(v => (v - mean)**2)
+
+  const variance : number = squaredDiffs.reduce((sum, diff) => sum + diff) / squaredDiffs.length
+
+  return variance
 }

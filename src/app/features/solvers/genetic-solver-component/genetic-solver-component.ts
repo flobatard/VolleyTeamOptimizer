@@ -4,6 +4,8 @@ import { PlayerDataService } from '../../../core/services/player-data.service';
 import { Player } from '../../../core/models/player';
 import { PlayerPair } from '../../../core/models/player-pair';
 import { ListPairPlayers } from '../../../shared/list-pair-players/list-pair-players';
+import { EstimatedTeam, estimateTeamQuality } from '../../../core/services/teams-model.service';
+import { calculatePlayerMedian } from '../../../core/services/algos/genetic-algo-solver';
 
 const STORAGE_KEY = 'VTO_genetic_solver_params';
 const STORAGE_KEY_TEAMS = 'VTO_genetic_solver_teams';
@@ -50,7 +52,7 @@ function loadParams(): PersistedParams {
   return DEFAULT_PARAMS;
 }
 
-function loadTeams(): Player[][] {
+function loadTeams(): EstimatedTeam[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY_TEAMS);
     if (stored) return JSON.parse(stored);
@@ -68,7 +70,7 @@ export class GeneticSolverComponent {
   private readonly playerDataService = inject(PlayerDataService);
 
   protected readonly players = this.playerDataService.selectedPlayers;
-  readonly teams = signal<Player[][]>(loadTeams());
+  readonly teams = signal<EstimatedTeam[]>(loadTeams());
   readonly isRunning = signal<boolean>(false);
   readonly workerError = signal<string | null>(null);
   readonly progress = signal<number>(0);
@@ -143,7 +145,11 @@ export class GeneticSolverComponent {
         worker.terminate();
       } else {
         this.progress.set(100);
-        this.teams.set(data.teams);
+        const attackerThreshold = this.attackerThreshold() ?? calculatePlayerMedian(this.players(), p => p.attack)
+        const setterThreshold = this.setterThreshold() ?? calculatePlayerMedian(this.players(), p => p.set) + 0.5
+        
+        const estimatedTeams = data.teams.map((t : Player[]) => estimateTeamQuality(t, this.attackersPerTeam() ?? 1, attackerThreshold, setterThreshold ))
+        this.teams.set(estimatedTeams);
         this.isRunning.set(false);
         worker.terminate();
       }
