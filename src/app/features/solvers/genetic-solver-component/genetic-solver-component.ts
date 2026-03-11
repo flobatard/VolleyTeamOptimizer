@@ -127,6 +127,15 @@ export class GeneticSolverComponent {
     });
   }
 
+  copyTeams(): void {
+    const text = this.teams()
+      .map((t, i) =>
+        `Équipe ${i + 1}:\n${t.team.map(p => p.name).join('\n')}`
+      )
+      .join('\n\n');
+    navigator.clipboard.writeText(text);
+  }
+
   run(): void {
     const selectedPlayers = this.players();
     const teamSize = this.targetTeamSize();

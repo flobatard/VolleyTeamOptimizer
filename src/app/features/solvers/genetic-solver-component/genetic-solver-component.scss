@@ -256,6 +256,29 @@
   gap: 16px;
 }
 
+// ── Actions équipes ───────────────────────────────────────────────────────────
+
+.teams-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.copy-btn {
+  padding: 0.5rem 1.25rem;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--radius-lg);
+
+  &:hover {
+    background: var(--color-border);
+    color: var(--color-text);
+  }
+}
+
 // ── Grille d'équipes ──────────────────────────────────────────────────────────
 
 .teams-grid {

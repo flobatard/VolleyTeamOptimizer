@@ -176,6 +176,9 @@
   </details>
 
   @if (teams().length > 0) {
+    <div class="teams-actions">
+      <button class="copy-btn" (click)="copyTeams()">Copier les équipes</button>
+    </div>
     <div class="teams-grid">
       @for (team of teams(); track $index) {
         <div class="team-card">
