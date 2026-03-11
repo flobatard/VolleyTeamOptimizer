@@ -19,6 +19,36 @@ export class PlayersDataView {
     return q ? this.players().filter(p => p.name.toLowerCase().includes(q)) : this.players();
   });
 
+  protected readonly sortField = signal<'id' | 'name' | 'selected'>('id');
+  protected readonly sortDir = signal<'asc' | 'desc'>('asc');
+  protected readonly sortedFilteredPlayers = computed(() => {
+    const players = this.filteredPlayers();
+    const field = this.sortField();
+    const dir = this.sortDir();
+    const selectedIds = this.selectedPlayerIds();
+    return [...players].sort((a, b) => {
+      let cmp = 0;
+      if (field === 'id') cmp = a.id - b.id;
+      else if (field === 'name') cmp = a.name.localeCompare(b.name, 'fr');
+      else if (field === 'selected') cmp = (selectedIds.has(b.id) ? 1 : 0) - (selectedIds.has(a.id) ? 1 : 0);
+      return dir === 'asc' ? cmp : -cmp;
+    });
+  });
+
+  setSort(field: 'id' | 'name' | 'selected'): void {
+    if (this.sortField() === field) {
+      this.sortDir.update(d => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      this.sortField.set(field);
+      this.sortDir.set('asc');
+    }
+  }
+
+  protected sortIcon(field: 'id' | 'name' | 'selected'): string {
+    if (this.sortField() !== field) return '↕';
+    return this.sortDir() === 'asc' ? '↑' : '↓';
+  }
+
   protected readonly allSelected = computed(
     () => this.players().length > 0 && this.selectedPlayerIds().size === this.players().length,
   );

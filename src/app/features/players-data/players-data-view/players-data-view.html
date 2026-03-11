@@ -58,8 +58,12 @@
               [indeterminate]="someSelected()"
               (change)="toggleAll()"
             />
+            <button class="sort-btn" (click)="setSort('selected')" title="Trier par sélection">{{ sortIcon('selected') }}</button>
           </th>
-          <th>Nom</th>
+          <th>
+            Nom
+            <button class="sort-btn" (click)="setSort('name')" title="Trier par nom">{{ sortIcon('name') }}</button>
+          </th>
           <th>Genre</th>
           <th>Note globale</th>
           <th>Attaque</th>
@@ -69,9 +73,9 @@
         </tr>
       </thead>
       <tbody>
-        @for (player of filteredPlayers(); track player.name) {
-          <tr [class.selected]="selectedPlayerIds().has(player.id)" (click)="toggleSelection(player.id)">
-            <td class="col-select">
+        @for (player of sortedFilteredPlayers(); track player.id) {
+          <tr [class.selected]="selectedPlayerIds().has(player.id)">
+            <td class="col-select" (click)="toggleSelection(player.id)">
               <input
                 type="checkbox"
                 [checked]="selectedPlayerIds().has(player.id)"
