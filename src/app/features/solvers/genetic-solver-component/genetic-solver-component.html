@@ -186,12 +186,20 @@
         <h3 class="player-constraint-section-title">Contraintes des paires de joueurs</h3>
         <div class="players-pair-list">
           <div>
-            <h4>Joueurs qui joue ensemble</h4>
-            <app-list-pair-players (pairsChange)="togetherPairsList.set($event)" />
+            <h4>Joueurs qui jouent ensemble</h4>
+            <app-list-pair-players
+              [availablePlayers]="players()"
+              [initialPairs]="togetherPairsList()"
+              (pairsChange)="togetherPairsList.set($event)"
+            />
           </div>
           <div>
-            <h4>Joueurs qui ne joue pas ensemble</h4>
-            <app-list-pair-players (pairsChange)="apartPairsList.set($event)" />
+            <h4>Joueurs qui ne doivent pas jouer ensemble</h4>
+            <app-list-pair-players
+              [availablePlayers]="players()"
+              [initialPairs]="apartPairsList()"
+              (pairsChange)="apartPairsList.set($event)"
+            />
           </div>
         </div>
       </div>

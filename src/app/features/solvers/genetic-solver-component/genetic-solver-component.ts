@@ -189,6 +189,18 @@ export class GeneticSolverComponent {
     });
 
     effect(() => {
+      const selectedIds = new Set(this.players().map((p) => p.id));
+      const filterPair = (p: PlayerPair) =>
+        selectedIds.has(p.player1Id) && selectedIds.has(p.player2Id);
+      const together = this.togetherPairsList().filter(filterPair);
+      const apart = this.apartPairsList().filter(filterPair);
+      if (together.length !== this.togetherPairsList().length || apart.length !== this.apartPairsList().length) {
+        this.togetherPairsList.set(together);
+        this.apartPairsList.set(apart);
+      }
+    });
+
+    effect(() => {
       const params: PersistedParams = {
         targetTeamSize: this.targetTeamSize(),
         forceEvenTeams: this.forceEvenTeams(),

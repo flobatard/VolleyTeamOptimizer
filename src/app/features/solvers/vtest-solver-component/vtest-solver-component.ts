@@ -7,6 +7,9 @@ import {
   estimateTeamQuality,
 } from '../../../core/services/teams-model.service';
 import { computeTeamDistributionSummary } from '../../../core/services/team-distribution';
+import { PlayerPair } from '../../../core/models/player-pair';
+import { PlayerTeamSizeConstraint } from '../../../core/models/player-team-size-constraint';
+import { ListPairPlayers } from '../../../shared/list-pair-players/list-pair-players';
 
 const TEAM_SIZE_OPTIONS = [3, 4, 5, 6] as const;
 const STORAGE_KEY = 'VTO_vtest_solver_params';
@@ -19,6 +22,9 @@ interface PersistedParams {
   killerThreshold: number;
   passerThreshold: number;
   maxGlobalDelta: number;
+  togetherPairsList: PlayerPair[];
+  apartPairsList: PlayerPair[];
+  playerTeamSizeConstraints: PlayerTeamSizeConstraint[];
 }
 
 const DEFAULT_PARAMS: PersistedParams = {
@@ -27,6 +33,9 @@ const DEFAULT_PARAMS: PersistedParams = {
   killerThreshold: 7,
   passerThreshold: 7,
   maxGlobalDelta: 1,
+  togetherPairsList: [],
+  apartPairsList: [],
+  playerTeamSizeConstraints: [],
 };
 
 function loadParams(): PersistedParams {
@@ -36,6 +45,11 @@ function loadParams(): PersistedParams {
       const parsed = { ...DEFAULT_PARAMS, ...JSON.parse(stored) };
       if (!TEAM_SIZE_OPTIONS.includes(parsed.targetTeamSize as (typeof TEAM_SIZE_OPTIONS)[number])) {
         parsed.targetTeamSize = DEFAULT_PARAMS.targetTeamSize;
+      }
+      if (!Array.isArray(parsed.togetherPairsList)) parsed.togetherPairsList = DEFAULT_PARAMS.togetherPairsList;
+      if (!Array.isArray(parsed.apartPairsList)) parsed.apartPairsList = DEFAULT_PARAMS.apartPairsList;
+      if (!Array.isArray(parsed.playerTeamSizeConstraints)) {
+        parsed.playerTeamSizeConstraints = DEFAULT_PARAMS.playerTeamSizeConstraints;
       }
       return parsed;
     }
@@ -53,12 +67,12 @@ function loadTeams(): EstimatedTeam[] {
 
 @Component({
   selector: 'app-vtest-solver-component',
-  imports: [FormsModule],
+  imports: [FormsModule, ListPairPlayers],
   templateUrl: './vtest-solver-component.html',
   styleUrl: './vtest-solver-component.scss',
 })
 export class VtestSolverComponent {
-  private readonly playerDataService = inject(PlayerDataService);
+  protected readonly playerDataService = inject(PlayerDataService);
 
   protected readonly players = this.playerDataService.selectedPlayers;
   readonly teams = signal<EstimatedTeam[]>(loadTeams());
@@ -93,6 +107,14 @@ export class VtestSolverComponent {
   protected readonly killerThreshold = signal(this.p.killerThreshold);
   protected readonly passerThreshold = signal(this.p.passerThreshold);
   protected readonly maxGlobalDelta = signal(this.p.maxGlobalDelta);
+
+  protected readonly togetherPairsList = signal<PlayerPair[]>(this.p.togetherPairsList);
+  protected readonly apartPairsList = signal<PlayerPair[]>(this.p.apartPairsList);
+  protected readonly playerTeamSizeConstraints = signal<PlayerTeamSizeConstraint[]>(
+    this.p.playerTeamSizeConstraints
+  );
+
+  protected readonly teamSizeOptionsForConstraints = TEAM_SIZE_OPTIONS;
 
   constructor() {
     effect(() => {
@@ -129,6 +151,24 @@ export class VtestSolverComponent {
     });
 
     effect(() => {
+      const selectedIds = new Set(this.players().map((p) => p.id));
+      const filterPair = (p: PlayerPair) =>
+        selectedIds.has(p.player1Id) && selectedIds.has(p.player2Id);
+      const together = this.togetherPairsList().filter(filterPair);
+      const apart = this.apartPairsList().filter(filterPair);
+      const teamSize = this.playerTeamSizeConstraints().filter((c) => selectedIds.has(c.playerId));
+      const needsUpdate =
+        together.length !== this.togetherPairsList().length ||
+        apart.length !== this.apartPairsList().length ||
+        teamSize.length !== this.playerTeamSizeConstraints().length;
+      if (needsUpdate) {
+        this.togetherPairsList.set(together);
+        this.apartPairsList.set(apart);
+        this.playerTeamSizeConstraints.set(teamSize);
+      }
+    });
+
+    effect(() => {
       const params: PersistedParams = {
         targetTeamSize: this.targetTeamSize(),
         forceEvenTeams: this.forceEvenTeams(),
@@ -136,6 +176,9 @@ export class VtestSolverComponent {
         killerThreshold: this.killerThreshold(),
         passerThreshold: this.passerThreshold(),
         maxGlobalDelta: this.maxGlobalDelta(),
+        togetherPairsList: this.togetherPairsList(),
+        apartPairsList: this.apartPairsList(),
+        playerTeamSizeConstraints: this.playerTeamSizeConstraints(),
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(params));
     });
@@ -143,6 +186,54 @@ export class VtestSolverComponent {
     effect(() => {
       localStorage.setItem(STORAGE_KEY_TEAMS, JSON.stringify(this.teams()));
     });
+  }
+
+  protected playerName(id: number): string {
+    return this.playerDataService.players().find((p) => p.id === id)?.name ?? '?';
+  }
+
+  protected addTeamSizeConstraint(): void {
+    const playerId = this.newConstraintPlayerId();
+    const excludedSizes = this.newConstraintExcludedSizes();
+    if (playerId === null || excludedSizes.length === 0) return;
+    const existing = this.playerTeamSizeConstraints().find((c) => c.playerId === playerId);
+    if (existing) return;
+    this.playerTeamSizeConstraints.update((list) => [
+      ...list,
+      { playerId, excludedSizes: [...excludedSizes] },
+    ]);
+    this.newConstraintPlayerId.set(null);
+    this.newConstraintExcludedSizes.set([]);
+    this.newConstraintSearchName.set('');
+  }
+
+  protected removeTeamSizeConstraint(index: number): void {
+    this.playerTeamSizeConstraints.update((list) => list.filter((_, i) => i !== index));
+  }
+
+  protected newConstraintPlayerId = signal<number | null>(null);
+  protected newConstraintExcludedSizes = signal<number[]>([]);
+  protected newConstraintSearchName = signal('');
+
+  protected onConstraintPlayerChange(name: string): void {
+    this.newConstraintSearchName.set(name);
+    const player = this.players().find((p) => p.name === name);
+    this.newConstraintPlayerId.set(player?.id ?? null);
+  }
+
+  protected toggleExcludedSize(size: number): void {
+    this.newConstraintExcludedSizes.update((sizes) => {
+      const has = sizes.includes(size);
+      return has ? sizes.filter((s) => s !== size) : [...sizes, size].sort((a, b) => a - b);
+    });
+  }
+
+  protected isSizeExcluded(size: number): boolean {
+    return this.newConstraintExcludedSizes().includes(size);
+  }
+
+  protected formatExcludedSizes(constraint: PlayerTeamSizeConstraint): string {
+    return constraint.excludedSizes.join(', ');
   }
 
   copyTeams(): void {
@@ -204,6 +295,9 @@ export class VtestSolverComponent {
         PASSER_THRESHOLD: this.passerThreshold(),
         FORCE_EVEN_TEAMS: this.forceEvenTeams(),
         MAX_GLOBAL_DELTA: this.maxGlobalDelta(),
+        TOGETHER_PAIRS: this.togetherPairsList(),
+        APART_PAIRS: this.apartPairsList(),
+        PLAYER_TEAM_SIZE_CONSTRAINTS: this.playerTeamSizeConstraints(),
       },
     });
   }

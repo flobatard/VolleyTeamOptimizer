@@ -1,4 +1,6 @@
 import { Player } from '../../models/player';
+import { PlayerPair } from '../../models/player-pair';
+import { PlayerTeamSizeConstraint } from '../../models/player-team-size-constraint';
 import { computeOptimalNumTeams } from '../team-distribution';
 
 export interface VTestParams {
@@ -14,6 +16,12 @@ export interface VTestParams {
   MAX_GLOBAL_DELTA?: number;
   /** Nombre d'équipes à générer (override du calcul automatique) */
   NUM_TEAMS?: number;
+  /** Paires de joueurs qui doivent jouer ensemble */
+  TOGETHER_PAIRS?: PlayerPair[];
+  /** Paires de joueurs qui ne doivent pas jouer ensemble */
+  APART_PAIRS?: PlayerPair[];
+  /** Contraintes de taille d'équipe par joueur (exclure certaines tailles) */
+  PLAYER_TEAM_SIZE_CONSTRAINTS?: PlayerTeamSizeConstraint[];
 }
 
 /**
@@ -46,6 +54,17 @@ export class VTestAlgoSolver {
     let bestTeams: Player[][] | null = null;
     let bestInvalidCount = numTeams + 1;
 
+    const togetherPairs = (params.TOGETHER_PAIRS ?? []).filter(
+      (p) => players.some((x) => x.id === p.player1Id) && players.some((x) => x.id === p.player2Id)
+    );
+    const apartPairs = (params.APART_PAIRS ?? []).filter(
+      (p) => players.some((x) => x.id === p.player1Id) && players.some((x) => x.id === p.player2Id)
+    );
+    const playerTeamSizeConstraints = (params.PLAYER_TEAM_SIZE_CONSTRAINTS ?? []).filter((c) =>
+      players.some((x) => x.id === c.playerId)
+    );
+    const constraintParams = { togetherPairs, apartPairs, playerTeamSizeConstraints };
+
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       if (onProgress && attempt % 10 === 0) {
         onProgress(Math.min(99, Math.round((attempt / maxAttempts) * 100)));
@@ -55,7 +74,8 @@ export class VTestAlgoSolver {
         players,
         numTeams,
         killerThreshold,
-        passerThreshold
+        passerThreshold,
+        constraintParams
       );
 
       if (result.valid) {
@@ -66,7 +86,8 @@ export class VTestAlgoSolver {
           killerThreshold,
           passerThreshold,
           numGirls,
-          maxGlobalDelta
+          maxGlobalDelta,
+          constraintParams
         );
       }
 
@@ -83,9 +104,16 @@ export class VTestAlgoSolver {
       killerThreshold,
       passerThreshold,
       numGirls,
-      maxGlobalDelta
+      maxGlobalDelta,
+      constraintParams
     );
   }
+
+  private constraintParams = {
+    togetherPairs: [] as PlayerPair[],
+    apartPairs: [] as PlayerPair[],
+    playerTeamSizeConstraints: [] as PlayerTeamSizeConstraint[],
+  };
 
   /**
    * Tente une assignation aléatoire et répare les équipes invalides par échanges.
@@ -95,13 +123,19 @@ export class VTestAlgoSolver {
     players: Player[],
     numTeams: number,
     killerThreshold: number,
-    passerThreshold: number
+    passerThreshold: number,
+    constraintParams: {
+      togetherPairs: PlayerPair[];
+      apartPairs: PlayerPair[];
+      playerTeamSizeConstraints: PlayerTeamSizeConstraint[];
+    }
   ): { teams: Player[][]; valid: boolean; invalidCount: number } {
+    this.constraintParams = constraintParams;
     const shuffled = this.shuffle([...players]);
     let teams = this.chunkIntoTeams(shuffled, numTeams);
 
     const numGirls = players.filter((p) => p.gender === 'F').length;
-    const maxRepairIterations = numTeams * 15;
+    const maxRepairIterations = numTeams * 25;
 
     for (let iter = 0; iter < maxRepairIterations; iter++) {
       // 1. Réparer killer/passer
@@ -149,11 +183,39 @@ export class VTestAlgoSolver {
         }
       }
 
+      // 4. Réparer contraintes de paires (ensemble / séparés)
+      const pairRepaired = this.tryRepairPairConstraints(
+        teams,
+        killerThreshold,
+        passerThreshold,
+        numGirls,
+        numTeams
+      );
+      if (pairRepaired) {
+        teams = pairRepaired;
+        continue;
+      }
+
+      // 5. Réparer contraintes de taille d'équipe
+      const teamSizeRepaired = this.tryRepairTeamSizeConstraints(
+        teams,
+        killerThreshold,
+        passerThreshold,
+        numGirls,
+        numTeams
+      );
+      if (teamSizeRepaired) {
+        teams = teamSizeRepaired;
+        continue;
+      }
+
       // Plus rien à réparer ou bloqué
-      if (
-        invalidTeamIdx === -1 &&
-        (numGirls < numTeams ? !this.hasGenderImbalance(teams) : !this.hasGenderSpreadImbalance(teams, numGirls))
-      ) {
+      const genderOk =
+        numGirls < numTeams ? !this.hasGenderImbalance(teams) : !this.hasGenderSpreadImbalance(teams, numGirls);
+      const pairOk = !this.hasPairConstraintViolations(teams);
+      const teamSizeOk = !this.hasTeamSizeConstraintViolations(teams);
+
+      if (invalidTeamIdx === -1 && genderOk && pairOk && teamSizeOk) {
         return { teams, valid: true, invalidCount: 0 };
       }
       if (invalidTeamIdx >= 0) {
@@ -172,6 +234,180 @@ export class VTestAlgoSolver {
       passerThreshold
     );
     return { teams, valid: invalidCount === 0, invalidCount };
+  }
+
+  private hasPairConstraintViolations(teams: Player[][]): boolean {
+    const playerTeamIndex = new Map<number, number>();
+    teams.forEach((team, idx) => team.forEach((p) => playerTeamIndex.set(p.id, idx)));
+
+    for (const pair of this.constraintParams.togetherPairs) {
+      const t1 = playerTeamIndex.get(pair.player1Id);
+      const t2 = playerTeamIndex.get(pair.player2Id);
+      if (t1 !== undefined && t2 !== undefined && t1 !== t2) return true;
+    }
+    for (const pair of this.constraintParams.apartPairs) {
+      const t1 = playerTeamIndex.get(pair.player1Id);
+      const t2 = playerTeamIndex.get(pair.player2Id);
+      if (t1 !== undefined && t2 !== undefined && t1 === t2) return true;
+    }
+    return false;
+  }
+
+  private hasTeamSizeConstraintViolations(teams: Player[][]): boolean {
+    for (const constraint of this.constraintParams.playerTeamSizeConstraints) {
+      for (let i = 0; i < teams.length; i++) {
+        const team = teams[i];
+        if (!constraint.excludedSizes.includes(team.length)) continue;
+        if (team.some((p) => p.id === constraint.playerId)) return true;
+      }
+    }
+    return false;
+  }
+
+  private tryRepairPairConstraints(
+    teams: Player[][],
+    killerThreshold: number,
+    passerThreshold: number,
+    numGirls: number,
+    numTeams: number
+  ): Player[][] | null {
+    const playerTeamIndex = new Map<number, number>();
+    teams.forEach((team, idx) => team.forEach((p) => playerTeamIndex.set(p.id, idx)));
+
+    const spreadGirls = numGirls < numTeams;
+    const ensureOneGirlPerTeam = numGirls >= numTeams;
+
+    // Réparer "together" : mettre les deux dans la même équipe
+    for (const pair of this.constraintParams.togetherPairs) {
+      const t1 = playerTeamIndex.get(pair.player1Id);
+      const t2 = playerTeamIndex.get(pair.player2Id);
+      if (t1 === undefined || t2 === undefined || t1 === t2) continue;
+
+      const team1 = teams[t1];
+      const team2 = teams[t2];
+      const p1 = team1.find((p) => p.id === pair.player1Id)!;
+      const p2 = team2.find((p) => p.id === pair.player2Id)!;
+
+      for (let j = 0; j < team2.length; j++) {
+        const other = team2[j];
+        if (other.id === pair.player2Id) continue;
+
+        const newTeam1 = team1.map((p) => (p.id === pair.player1Id ? other : p));
+        const newTeam2 = team2.map((p) => (p.id === other.id ? p1 : p));
+
+        if (
+          this.teamValid(newTeam1, killerThreshold, passerThreshold) &&
+          this.teamValid(newTeam2, killerThreshold, passerThreshold) &&
+          this.genderValidAfterSwap(teams, t1, t2, p1, other, spreadGirls, ensureOneGirlPerTeam)
+        ) {
+          const newTeams = teams.map((t, idx) =>
+            idx === t1 ? newTeam1 : idx === t2 ? newTeam2 : t
+          );
+          return newTeams;
+        }
+      }
+    }
+
+    // Réparer "apart" : séparer les deux
+    for (const pair of this.constraintParams.apartPairs) {
+      const t1 = playerTeamIndex.get(pair.player1Id);
+      const t2 = playerTeamIndex.get(pair.player2Id);
+      if (t1 === undefined || t2 === undefined || t1 !== t2) continue;
+
+      const team1 = teams[t1];
+      const p1 = team1.find((p) => p.id === pair.player1Id)!;
+      const p2 = team1.find((p) => p.id === pair.player2Id)!;
+
+      for (let otherIdx = 0; otherIdx < teams.length; otherIdx++) {
+        if (otherIdx === t1) continue;
+        const otherTeam = teams[otherIdx];
+        for (let j = 0; j < otherTeam.length; j++) {
+          const other = otherTeam[j];
+          const newTeam1 = team1.map((p) => (p.id === pair.player1Id ? other : p));
+          const newOther = otherTeam.map((p) => (p.id === other.id ? p1 : p));
+
+          if (
+            this.teamValid(newTeam1, killerThreshold, passerThreshold) &&
+            this.teamValid(newOther, killerThreshold, passerThreshold) &&
+            this.genderValidAfterSwap(teams, t1, otherIdx, p1, other, spreadGirls, ensureOneGirlPerTeam)
+          ) {
+            const newTeams = teams.map((t, idx) =>
+              idx === t1 ? newTeam1 : idx === otherIdx ? newOther : t
+            );
+            return newTeams;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  private genderValidAfterSwap(
+    teams: Player[][],
+    fromIdx: number,
+    toIdx: number,
+    pOut: Player,
+    pIn: Player,
+    spreadGirls: boolean,
+    ensureOneGirlPerTeam: boolean
+  ): boolean {
+    const fromTeam = teams[fromIdx];
+    const toTeam = teams[toIdx];
+    const fromGirlsAfter =
+      fromTeam.filter((p) => p.gender === 'F').length -
+      (pOut.gender === 'F' ? 1 : 0) +
+      (pIn.gender === 'F' ? 1 : 0);
+    const toGirlsAfter =
+      toTeam.filter((p) => p.gender === 'F').length -
+      (pIn.gender === 'F' ? 1 : 0) +
+      (pOut.gender === 'F' ? 1 : 0);
+    if (spreadGirls) return fromGirlsAfter <= 1 && toGirlsAfter <= 1;
+    if (ensureOneGirlPerTeam) return fromGirlsAfter >= 1 && toGirlsAfter >= 1;
+    return true;
+  }
+
+  private tryRepairTeamSizeConstraints(
+    teams: Player[][],
+    killerThreshold: number,
+    passerThreshold: number,
+    numGirls: number,
+    numTeams: number
+  ): Player[][] | null {
+    const spreadGirls = numGirls < numTeams;
+    const ensureOneGirlPerTeam = numGirls >= numTeams;
+
+    for (const constraint of this.constraintParams.playerTeamSizeConstraints) {
+      for (let teamIdx = 0; teamIdx < teams.length; teamIdx++) {
+        const team = teams[teamIdx];
+        if (!constraint.excludedSizes.includes(team.length)) continue;
+        const player = team.find((p) => p.id === constraint.playerId);
+        if (!player) continue;
+
+        for (let otherIdx = 0; otherIdx < teams.length; otherIdx++) {
+          if (otherIdx === teamIdx) continue;
+          const otherTeam = teams[otherIdx];
+          if (constraint.excludedSizes.includes(otherTeam.length)) continue;
+
+          for (let j = 0; j < otherTeam.length; j++) {
+            const other = otherTeam[j];
+            const newTeam = team.map((p) => (p.id === constraint.playerId ? other : p));
+            const newOther = otherTeam.map((p) => (p.id === other.id ? player : p));
+
+            if (
+              this.teamValid(newTeam, killerThreshold, passerThreshold) &&
+              this.teamValid(newOther, killerThreshold, passerThreshold) &&
+              this.genderValidAfterSwap(teams, teamIdx, otherIdx, player, other, spreadGirls, ensureOneGirlPerTeam)
+            ) {
+              const newTeams = teams.map((t, idx) =>
+                idx === teamIdx ? newTeam : idx === otherIdx ? newOther : t
+              );
+              return newTeams;
+            }
+          }
+        }
+      }
+    }
+    return null;
   }
 
   /** Quand moins de filles que d'équipes : déséquilibre = une équipe a 2+ filles */
@@ -292,7 +528,7 @@ export class VTestAlgoSolver {
 
   /**
    * Équilibre les équipes par score global, défense et attaque via échanges,
-   * sans casser killer/passer/gender.
+   * sans casser killer/passer/gender ni les contraintes de paires/taille.
    * Arrête quand tous les écarts (global, défense, attaque) <= maxGlobalDelta.
    */
   private balanceTeamsByGlobalScore(
@@ -300,8 +536,16 @@ export class VTestAlgoSolver {
     killerThreshold: number,
     passerThreshold: number,
     numGirls: number,
-    maxGlobalDelta: number
+    maxGlobalDelta: number,
+    constraintParams: {
+      togetherPairs: PlayerPair[];
+      apartPairs: PlayerPair[];
+      playerTeamSizeConstraints: PlayerTeamSizeConstraint[];
+    }
   ): Player[][] {
+    const prevConstraints = this.constraintParams;
+    this.constraintParams = constraintParams;
+
     const spreadGirls = numGirls < teams.length; // max 1 fille par équipe
     const ensureOneGirlPerTeam = numGirls >= teams.length; // au moins 1 fille par équipe
     let current = teams.map((t) => [...t]);
@@ -327,27 +571,32 @@ export class VTestAlgoSolver {
               const newI = teamI.map((p, idx) => (idx === ii ? pJ : p));
               const newJ = teamJ.map((p, idx) => (idx === jj ? pI : p));
 
-              const newStats = this.computeTeamStats(
-                current.map((t, idx) =>
-                  idx === i ? newI : idx === j ? newJ : t
-                )
+              const newTeams = current.map((t, idx) =>
+                idx === i ? newI : idx === j ? newJ : t
               );
+              const newStats = this.computeTeamStats(newTeams);
               const newCost = this.imbalanceCost(newStats);
               if (newCost >= cost) continue;
 
-              const genderOk = spreadGirls
-                ? this.genderValidAfterSwap(current, i, j, pI, pJ)
-                : ensureOneGirlPerTeam
-                  ? this.genderSpreadValidAfterSwap(current, i, j, pI, pJ)
-                  : true;
+              const genderOk = this.genderValidAfterSwap(
+                current,
+                i,
+                j,
+                pI,
+                pJ,
+                spreadGirls,
+                ensureOneGirlPerTeam
+              );
+              const constraintsOk =
+                !this.hasPairConstraintViolations(newTeams) &&
+                !this.hasTeamSizeConstraintViolations(newTeams);
               if (
                 this.teamValid(newI, killerThreshold, passerThreshold) &&
                 this.teamValid(newJ, killerThreshold, passerThreshold) &&
-                genderOk
+                genderOk &&
+                constraintsOk
               ) {
-                current = current.map((t, idx) =>
-                  idx === i ? newI : idx === j ? newJ : t
-                );
+                current = newTeams;
                 improved = true;
               }
             }
@@ -356,6 +605,8 @@ export class VTestAlgoSolver {
       }
       if (!improved) break;
     }
+
+    this.constraintParams = prevConstraints;
     return current;
   }
 
@@ -408,47 +659,6 @@ export class VTestAlgoSolver {
       team.some((p) => p.attack >= killerThreshold) &&
       team.some((p) => p.set >= passerThreshold)
     );
-  }
-
-  private genderValidAfterSwap(
-    teams: Player[][],
-    fromIdx: number,
-    toIdx: number,
-    pOut: Player,
-    pIn: Player
-  ): boolean {
-    const fromTeam = teams[fromIdx];
-    const toTeam = teams[toIdx];
-    const fromGirlsAfter =
-      fromTeam.filter((p) => p.gender === 'F').length -
-      (pOut.gender === 'F' ? 1 : 0) +
-      (pIn.gender === 'F' ? 1 : 0);
-    const toGirlsAfter =
-      toTeam.filter((p) => p.gender === 'F').length -
-      (pIn.gender === 'F' ? 1 : 0) +
-      (pOut.gender === 'F' ? 1 : 0);
-    return fromGirlsAfter <= 1 && toGirlsAfter <= 1;
-  }
-
-  /** Vérifie qu'après un swap, chaque équipe garde au moins 1 fille (quand assez de filles). */
-  private genderSpreadValidAfterSwap(
-    teams: Player[][],
-    fromIdx: number,
-    toIdx: number,
-    pOut: Player,
-    pIn: Player
-  ): boolean {
-    const fromTeam = teams[fromIdx];
-    const toTeam = teams[toIdx];
-    const fromGirlsAfter =
-      fromTeam.filter((p) => p.gender === 'F').length -
-      (pOut.gender === 'F' ? 1 : 0) +
-      (pIn.gender === 'F' ? 1 : 0);
-    const toGirlsAfter =
-      toTeam.filter((p) => p.gender === 'F').length -
-      (pIn.gender === 'F' ? 1 : 0) +
-      (pOut.gender === 'F' ? 1 : 0);
-    return fromGirlsAfter >= 1 && toGirlsAfter >= 1;
   }
 
   private countInvalidTeams(

@@ -103,6 +103,91 @@
   </details>
 
   <details class="advanced-options">
+    <summary class="advanced-options__summary">Contraintes</summary>
+    <div class="advanced-options__content">
+      <div class="player-constraint-section">
+        <h3 class="player-constraint-section-title">Taille d'équipe interdite par joueur</h3>
+        <p class="options-desc">
+          Indiquez qu'un joueur ne peut pas être placé dans une équipe de 3, 4, 5 ou 6 joueurs.
+        </p>
+        <div class="team-size-constraint-adder">
+          <input
+            class="player-input"
+            [attr.list]="'vtest-constraint-players'"
+            [ngModel]="newConstraintSearchName()"
+            (ngModelChange)="onConstraintPlayerChange($event)"
+            placeholder="Sélectionner un joueur…"
+          />
+          <datalist id="vtest-constraint-players">
+            @for (player of players(); track player.id) {
+              <option [value]="player.name"></option>
+            }
+          </datalist>
+          <div class="excluded-sizes">
+            <span class="excluded-sizes-label">Exclure des équipes de :</span>
+            @for (size of teamSizeOptionsForConstraints; track size) {
+              <label class="size-checkbox">
+                <input
+                  type="checkbox"
+                  [checked]="isSizeExcluded(size)"
+                  (change)="toggleExcludedSize(size)"
+                />
+                {{ size }}
+              </label>
+            }
+          </div>
+          <button
+            class="add-constraint-btn"
+            (click)="addTeamSizeConstraint()"
+            [disabled]="newConstraintPlayerId() === null || newConstraintExcludedSizes().length === 0"
+          >
+            + Ajouter
+          </button>
+        </div>
+        @if (playerTeamSizeConstraints().length > 0) {
+          <ul class="constraints-list">
+            @for (c of playerTeamSizeConstraints(); track c.playerId) {
+              <li class="constraint-item">
+                <span class="constraint-text">
+                  {{ playerName(c.playerId) }} : pas dans équipes de {{ formatExcludedSizes(c) }}
+                </span>
+                <button
+                  class="remove-btn"
+                  title="Supprimer"
+                  (click)="removeTeamSizeConstraint($index)"
+                >
+                  ✕
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+      <div class="player-constraint-section">
+        <h3 class="player-constraint-section-title">Contraintes des paires de joueurs</h3>
+        <div class="players-pair-list">
+          <div>
+            <h4>Joueurs qui doivent jouer ensemble</h4>
+            <app-list-pair-players
+              [availablePlayers]="players()"
+              [initialPairs]="togetherPairsList()"
+              (pairsChange)="togetherPairsList.set($event)"
+            />
+          </div>
+          <div>
+            <h4>Joueurs qui ne doivent pas jouer ensemble</h4>
+            <app-list-pair-players
+              [availablePlayers]="players()"
+              [initialPairs]="apartPairsList()"
+              (pairsChange)="apartPairsList.set($event)"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="advanced-options">
     <summary class="advanced-options__summary">Équilibrage global / défense / attaque</summary>
     <div class="advanced-options__content">
       <p class="options-desc">

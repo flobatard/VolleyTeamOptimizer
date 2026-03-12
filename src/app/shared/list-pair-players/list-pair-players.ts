@@ -1,6 +1,7 @@
-import { Component, inject, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PlayerDataService } from '../../core/services/player-data.service';
+import { Player } from '../../core/models/player';
 import { PlayerPair } from '../../core/models/player-pair';
 
 @Component({
@@ -14,11 +15,26 @@ export class ListPairPlayers {
   protected readonly instanceId = ++ListPairPlayers.instanceCount;
 
   private readonly playerDataService = inject(PlayerDataService);
-  protected readonly players = this.playerDataService.players;
+
+  /** Joueurs disponibles pour la sélection. Si non fourni, utilise tous les joueurs. */
+  readonly availablePlayers = input<Player[] | null>(null);
+
+  /** Liste des joueurs affichés dans le datalist (sélectionnés ou tous) */
+  protected readonly players = computed(() => this.availablePlayers() ?? this.playerDataService.players());
+
+  /** Paires initiales (ex. depuis localStorage). Le parent est la source de vérité. */
+  readonly initialPairs = input<PlayerPair[]>([]);
 
   private readonly _pairs = signal<PlayerPair[]>([]);
   readonly pairs = this._pairs.asReadonly();
   readonly pairsChange = output<PlayerPair[]>();
+
+  constructor() {
+    effect(() => {
+      const init = this.initialPairs();
+      this._pairs.set(init);
+    });
+  }
 
   protected newId1: number | null = null;
   protected newId2: number | null = null;
@@ -36,7 +52,7 @@ export class ListPairPlayers {
   }
 
   protected playerName(id: number): string {
-    return this.players().find((p) => p.id === id)?.name || '?';
+    return this.playerDataService.players().find((p) => p.id === id)?.name ?? '?';
   }
 
   addPair(): void {
