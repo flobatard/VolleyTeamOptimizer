@@ -73,10 +73,33 @@
   }
 }
 
-.team-size-input {
-  width: 72px;
-  padding: 0.5rem 0.625rem;
-  text-align: center;
+.team-size-radios {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+
+  input[type='radio'] {
+    cursor: pointer;
+  }
+}
+
+.radio-text {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.team-summary {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
 }
 
 .player-count {

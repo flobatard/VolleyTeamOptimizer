@@ -1,4 +1,4 @@
-import { Component, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PlayerDataService } from '../../../core/services/player-data.service';
 import { Player } from '../../../core/models/player';
@@ -6,7 +6,9 @@ import {
   EstimatedTeam,
   estimateTeamQuality,
 } from '../../../core/services/teams-model.service';
+import { computeTeamDistributionSummary } from '../../../core/services/team-distribution';
 
+const TEAM_SIZE_OPTIONS = [3, 4, 6] as const;
 const STORAGE_KEY = 'VTO_vtest_solver_params';
 const STORAGE_KEY_TEAMS = 'VTO_vtest_solver_teams';
 
@@ -19,7 +21,7 @@ interface PersistedParams {
 }
 
 const DEFAULT_PARAMS: PersistedParams = {
-  targetTeamSize: 6,
+  targetTeamSize: 4,
   forceEvenTeams: false,
   killerThreshold: 7,
   passerThreshold: 7,
@@ -29,7 +31,13 @@ const DEFAULT_PARAMS: PersistedParams = {
 function loadParams(): PersistedParams {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return { ...DEFAULT_PARAMS, ...JSON.parse(stored) };
+    if (stored) {
+      const parsed = { ...DEFAULT_PARAMS, ...JSON.parse(stored) };
+      if (!TEAM_SIZE_OPTIONS.includes(parsed.targetTeamSize as (typeof TEAM_SIZE_OPTIONS)[number])) {
+        parsed.targetTeamSize = DEFAULT_PARAMS.targetTeamSize;
+      }
+      return parsed;
+    }
   } catch {}
   return DEFAULT_PARAMS;
 }
@@ -61,6 +69,15 @@ export class VtestSolverComponent {
 
   protected readonly targetTeamSize = signal(this.p.targetTeamSize);
   protected readonly forceEvenTeams = signal(this.p.forceEvenTeams);
+  protected readonly teamSizeOptions = TEAM_SIZE_OPTIONS;
+
+  readonly teamDistributionSummary = computed(() => {
+    const n = this.players().length;
+    const size = this.targetTeamSize();
+    const forceEven = this.forceEvenTeams();
+    if (n === 0) return null;
+    return computeTeamDistributionSummary(n, size, forceEven);
+  });
   protected readonly killerThreshold = signal(this.p.killerThreshold);
   protected readonly passerThreshold = signal(this.p.passerThreshold);
   protected readonly maxGlobalDelta = signal(this.p.maxGlobalDelta);

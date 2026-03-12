@@ -6,17 +6,25 @@
   }
 
   <div class="controls">
-    <label class="control-label" for="teamSize">Taille cible par équipe</label>
-    <input
-      id="teamSize"
-      class="team-size-input"
-      type="number"
-      [ngModel]="targetTeamSize()"
-      (ngModelChange)="targetTeamSize.set($event)"
-      min="2"
-      max="20"
-    />
+    <span class="control-label">Taille cible par équipe</span>
+    <div class="team-size-radios" role="radiogroup" aria-label="Nombre de joueurs par équipe">
+      @for (size of teamSizeOptions; track size) {
+        <label class="radio-label">
+          <input
+            type="radio"
+            name="teamSize"
+            [value]="size"
+            [ngModel]="targetTeamSize()"
+            (ngModelChange)="targetTeamSize.set(+$event)"
+          />
+          <span class="radio-text">{{ size }} joueurs</span>
+        </label>
+      }
+    </div>
     <span class="player-count">{{ players().length }} joueur{{ players().length > 1 ? 's' : '' }} sélectionné{{ players().length > 1 ? 's' : '' }}</span>
+    @if (teamDistributionSummary(); as summary) {
+      <span class="team-summary">{{ summary.summary }}</span>
+    }
     <label class="control-label control-label--checkbox">
       <input
         type="checkbox"

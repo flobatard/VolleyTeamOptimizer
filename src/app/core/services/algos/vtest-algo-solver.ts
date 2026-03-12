@@ -1,4 +1,5 @@
 import { Player } from '../../models/player';
+import { computeOptimalNumTeams } from '../team-distribution';
 
 export interface VTestParams {
   /** Seuil attaque pour être considéré comme killer (défaut: 7) */
@@ -38,10 +39,7 @@ export class VTestAlgoSolver {
     const forceEvenTeams = params.FORCE_EVEN_TEAMS ?? false;
     const maxGlobalDelta = params.MAX_GLOBAL_DELTA ?? VTestAlgoSolver.DEFAULT_MAX_GLOBAL_DELTA;
 
-    let numTeams = Math.max(1, Math.round(players.length / targetTeamSize));
-    if (forceEvenTeams && numTeams % 2 !== 0) {
-      numTeams = numTeams > 1 ? numTeams - 1 : 2;
-    }
+    const numTeams = computeOptimalNumTeams(players.length, targetTeamSize, forceEvenTeams);
 
     let bestTeams: Player[][] | null = null;
     let bestInvalidCount = numTeams + 1;

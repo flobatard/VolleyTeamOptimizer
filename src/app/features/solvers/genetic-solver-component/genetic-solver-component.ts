@@ -6,6 +6,9 @@ import { PlayerPair } from '../../../core/models/player-pair';
 import { ListPairPlayers } from '../../../shared/list-pair-players/list-pair-players';
 import { EstimatedTeam, estimateTeamQuality } from '../../../core/services/teams-model.service';
 import { calculatePlayerMedian } from '../../../core/services/algos/genetic-algo-solver';
+import { computeTeamDistributionSummary } from '../../../core/services/team-distribution';
+
+const TEAM_SIZE_OPTIONS = [3, 4, 6] as const;
 
 const STORAGE_KEY = 'VTO_genetic_solver_params';
 const STORAGE_KEY_TEAMS = 'VTO_genetic_solver_teams';
@@ -28,7 +31,7 @@ interface PersistedParams {
 }
 
 const DEFAULT_PARAMS: PersistedParams = {
-  targetTeamSize: 6,
+  targetTeamSize: 4,
   forceEvenTeams: false,
   populationSize: 200,
   generations: 1000,
@@ -47,7 +50,13 @@ const DEFAULT_PARAMS: PersistedParams = {
 function loadParams(): PersistedParams {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return { ...DEFAULT_PARAMS, ...JSON.parse(stored) };
+    if (stored) {
+      const parsed = { ...DEFAULT_PARAMS, ...JSON.parse(stored) };
+      if (!TEAM_SIZE_OPTIONS.includes(parsed.targetTeamSize as (typeof TEAM_SIZE_OPTIONS)[number])) {
+        parsed.targetTeamSize = DEFAULT_PARAMS.targetTeamSize;
+      }
+      return parsed;
+    }
   } catch {}
   return DEFAULT_PARAMS;
 }
@@ -100,6 +109,15 @@ export class GeneticSolverComponent {
 
   protected readonly targetTeamSize = signal(this.p.targetTeamSize);
   protected readonly forceEvenTeams = signal(this.p.forceEvenTeams);
+  protected readonly teamSizeOptions = TEAM_SIZE_OPTIONS;
+
+  readonly teamDistributionSummary = computed(() => {
+    const n = this.players().length;
+    const size = this.targetTeamSize();
+    const forceEven = this.forceEvenTeams();
+    if (n === 0) return null;
+    return computeTeamDistributionSummary(n, size, forceEven);
+  });
 
   // Paramètres algo
   protected readonly populationSize = signal(this.p.populationSize);

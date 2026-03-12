@@ -1,6 +1,7 @@
 import { Player } from "../../models/player";
 import { PlayerPair } from "../../models/player-pair";
 import { EstimatedTeam, estimateTeamQuality } from "../teams-model.service";
+import { computeOptimalNumTeams } from "../team-distribution";
 
 export interface GAParams {
   POPULATION_SIZE?: number;
@@ -62,13 +63,8 @@ export class GeneticAlgoSolver {
     const MUTATION_RATE = params.MUTATION_RATE || 0.7;
     const FORCE_EVEN_TEAMS = params.FORCE_EVEN_TEAMS || false;
 
-    // 1. Déterminer le nombre optimal d'équipes
-    let numTeams = Math.max(1, Math.round(players.length / targetTeamSize));
-    if (FORCE_EVEN_TEAMS && numTeams % 2 !== 0) {
-      numTeams = (players.length / numTeams > targetTeamSize) ? 
-                 (numTeams > 1 ? numTeams + 1 : 2) : 
-                 (numTeams > 1 ? numTeams - 1 : 2);
-    }
+    // 1. Déterminer le nombre optimal d'équipes (minimise l'écart à la taille cible)
+    let numTeams = computeOptimalNumTeams(players.length, targetTeamSize, FORCE_EVEN_TEAMS);
 
     // 2. PRE-CALCUL DES CONSTANTES (Le gros gain de performance est ici)
     const constants = this.preCalculateConstants(players, numTeams, params);
