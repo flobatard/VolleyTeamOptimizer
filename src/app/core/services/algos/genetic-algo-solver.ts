@@ -8,6 +8,8 @@ export interface GAParams {
   GENERATIONS?: number;
   MUTATION_RATE?: number;
   FORCE_EVEN_TEAMS?: boolean;
+  /** Nombre d'équipes à générer (override du calcul automatique) */
+  NUM_TEAMS?: number;
 
   // Attaque
   ATTACKER_THRESHOLD?: number;
@@ -63,8 +65,8 @@ export class GeneticAlgoSolver {
     const MUTATION_RATE = params.MUTATION_RATE || 0.7;
     const FORCE_EVEN_TEAMS = params.FORCE_EVEN_TEAMS || false;
 
-    // 1. Déterminer le nombre optimal d'équipes (minimise l'écart à la taille cible)
-    let numTeams = computeOptimalNumTeams(players.length, targetTeamSize, FORCE_EVEN_TEAMS);
+    // 1. Déterminer le nombre d'équipes (override utilisateur ou calcul automatique)
+    let numTeams = params.NUM_TEAMS ?? computeOptimalNumTeams(players.length, targetTeamSize, FORCE_EVEN_TEAMS);
 
     // 2. PRE-CALCUL DES CONSTANTES (Le gros gain de performance est ici)
     const constants = this.preCalculateConstants(players, numTeams, params);

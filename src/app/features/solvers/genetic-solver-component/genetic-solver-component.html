@@ -22,6 +22,20 @@
       }
     </div>
     <span class="player-count">{{ players().length }} joueur{{ players().length > 1 ? 's' : '' }} sélectionné{{ players().length > 1 ? 's' : '' }}</span>
+    <div class="num-teams-slider">
+      <label class="control-label">
+        Nombre d'équipes
+        <span class="num-teams-value">{{ numTeams() }}</span>
+      </label>
+      <input
+        type="range"
+        [min]="numTeamsRange().min"
+        [max]="numTeamsRange().max"
+        [ngModel]="numTeams()"
+        (ngModelChange)="numTeams.set(+$event)"
+        class="num-teams-range"
+      />
+    </div>
     @if (teamDistributionSummary(); as summary) {
       <span class="team-summary">{{ summary.summary }}</span>
     }

@@ -8,7 +8,7 @@ import { EstimatedTeam, estimateTeamQuality } from '../../../core/services/teams
 import { calculatePlayerMedian } from '../../../core/services/algos/genetic-algo-solver';
 import { computeTeamDistributionSummary } from '../../../core/services/team-distribution';
 
-const TEAM_SIZE_OPTIONS = [3, 4, 6] as const;
+const TEAM_SIZE_OPTIONS = [3, 4, 5, 6] as const;
 
 const STORAGE_KEY = 'VTO_genetic_solver_params';
 const STORAGE_KEY_TEAMS = 'VTO_genetic_solver_teams';
@@ -16,6 +16,7 @@ const STORAGE_KEY_TEAMS = 'VTO_genetic_solver_teams';
 interface PersistedParams {
   targetTeamSize: number;
   forceEvenTeams: boolean;
+  numTeams?: number;
   populationSize: number;
   generations: number;
   mutationRate: number;
@@ -111,12 +112,25 @@ export class GeneticSolverComponent {
   protected readonly forceEvenTeams = signal(this.p.forceEvenTeams);
   protected readonly teamSizeOptions = TEAM_SIZE_OPTIONS;
 
+  private numTeamsInitialized = this.p.numTeams != null;
+  protected readonly numTeams = signal(
+    this.p.numTeams ?? 2
+  );
+
+  readonly numTeamsRange = computed(() => {
+    const n = this.players().length;
+    const min = 2;
+    const max = n > 0 ? Math.max(2, Math.floor(n / 2)) : 2;
+    return { min, max };
+  });
+
   readonly teamDistributionSummary = computed(() => {
     const n = this.players().length;
     const size = this.targetTeamSize();
     const forceEven = this.forceEvenTeams();
+    const override = this.numTeams();
     if (n === 0) return null;
-    return computeTeamDistributionSummary(n, size, forceEven);
+    return computeTeamDistributionSummary(n, size, forceEven, override);
   });
 
   // Paramètres algo
@@ -142,9 +156,43 @@ export class GeneticSolverComponent {
 
   constructor() {
     effect(() => {
+      if (!this.numTeamsInitialized) {
+        const n = this.players().length;
+        if (n > 0) {
+          const summary = computeTeamDistributionSummary(
+            n,
+            this.targetTeamSize(),
+            this.forceEvenTeams()
+          );
+          this.numTeams.set(summary.numTeams);
+          this.numTeamsInitialized = true;
+        }
+      }
+    });
+
+    effect(() => {
+      const n = this.players().length;
+      const size = this.targetTeamSize();
+      const forceEven = this.forceEvenTeams();
+      if (n > 0) {
+        const summary = computeTeamDistributionSummary(n, size, forceEven);
+        this.numTeams.set(summary.numTeams);
+      }
+    });
+
+    effect(() => {
+      const range = this.numTeamsRange();
+      const current = this.numTeams();
+      if (current < range.min || current > range.max) {
+        this.numTeams.set(Math.max(range.min, Math.min(range.max, current)));
+      }
+    });
+
+    effect(() => {
       const params: PersistedParams = {
         targetTeamSize: this.targetTeamSize(),
         forceEvenTeams: this.forceEvenTeams(),
+        numTeams: this.numTeams(),
         populationSize: this.populationSize(),
         generations: this.generations(),
         mutationRate: this.mutationRate(),
@@ -215,6 +263,7 @@ export class GeneticSolverComponent {
       players: selectedPlayers,
       targetTeamSize: teamSize,
       params: {
+        NUM_TEAMS: this.numTeams(),
         FORCE_EVEN_TEAMS: this.forceEvenTeams(),
         POPULATION_SIZE: this.populationSize(),
         GENERATIONS: this.generations(),

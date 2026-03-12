@@ -108,6 +108,24 @@
   font-style: italic;
 }
 
+.num-teams-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 140px;
+}
+
+.num-teams-value {
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-left: 0.25rem;
+}
+
+.num-teams-range {
+  width: 100%;
+  cursor: pointer;
+}
+
 .team-summary {
   font-size: 0.875rem;
   color: var(--color-text-secondary);

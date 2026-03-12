@@ -12,6 +12,8 @@ export interface VTestParams {
   FORCE_EVEN_TEAMS?: boolean;
   /** Écart max autorisé entre les moyennes de score global des équipes (défaut: 1). 0 = optimisation maximale. */
   MAX_GLOBAL_DELTA?: number;
+  /** Nombre d'équipes à générer (override du calcul automatique) */
+  NUM_TEAMS?: number;
 }
 
 /**
@@ -39,7 +41,7 @@ export class VTestAlgoSolver {
     const forceEvenTeams = params.FORCE_EVEN_TEAMS ?? false;
     const maxGlobalDelta = params.MAX_GLOBAL_DELTA ?? VTestAlgoSolver.DEFAULT_MAX_GLOBAL_DELTA;
 
-    const numTeams = computeOptimalNumTeams(players.length, targetTeamSize, forceEvenTeams);
+    const numTeams = params.NUM_TEAMS ?? computeOptimalNumTeams(players.length, targetTeamSize, forceEvenTeams);
 
     let bestTeams: Player[][] | null = null;
     let bestInvalidCount = numTeams + 1;

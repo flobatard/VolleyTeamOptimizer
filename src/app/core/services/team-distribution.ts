@@ -66,13 +66,15 @@ export interface TeamDistributionSummary {
 /**
  * Calcule et formate le résumé de la répartition des équipes.
  * Ex: "4 équipes dont 3×4 et 1×3"
+ * @param overrideNumTeams Si fourni, utilise ce nombre au lieu du calcul automatique.
  */
 export function computeTeamDistributionSummary(
   numPlayers: number,
   targetTeamSize: number,
-  forceEvenTeams?: boolean
+  forceEvenTeams?: boolean,
+  overrideNumTeams?: number
 ): TeamDistributionSummary {
-  const numTeams = computeOptimalNumTeams(numPlayers, targetTeamSize, forceEvenTeams);
+  const numTeams = overrideNumTeams ?? computeOptimalNumTeams(numPlayers, targetTeamSize, forceEvenTeams);
   const sizes = getRoundRobinSizes(numPlayers, numTeams);
 
   const countBySize = new Map<number, number>();
