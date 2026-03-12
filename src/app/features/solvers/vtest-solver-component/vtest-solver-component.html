@@ -1,0 +1,133 @@
+<div class="vtest-solver">
+  @if (players().length === 0) {
+    <div class="warning">
+      Aucun joueur sélectionné — N'oubliez pas de cocher la ligne pour que le joueur soit pris en compte par le solveur.
+    </div>
+  }
+
+  <div class="controls">
+    <label class="control-label" for="teamSize">Taille cible par équipe</label>
+    <input
+      id="teamSize"
+      class="team-size-input"
+      type="number"
+      [ngModel]="targetTeamSize()"
+      (ngModelChange)="targetTeamSize.set($event)"
+      min="2"
+      max="20"
+    />
+    <span class="player-count">{{ players().length }} joueur{{ players().length > 1 ? 's' : '' }} sélectionné{{ players().length > 1 ? 's' : '' }}</span>
+    <label class="control-label control-label--checkbox">
+      <input
+        type="checkbox"
+        [ngModel]="forceEvenTeams()"
+        (ngModelChange)="forceEvenTeams.set($event)"
+      />
+      Nombre d'équipes pair
+    </label>
+    <button
+      class="run-btn"
+      (click)="run()"
+      [disabled]="isRunning() || players().length === 0"
+    >
+      {{ isRunning() ? 'Calcul en cours…' : 'Randomiser les équipes' }}
+    </button>
+  </div>
+
+  @if (isRunning()) {
+    <div class="progress-bar">
+      <div class="progress-bar__fill" [style.width.%]="progress()"></div>
+      <span class="progress-bar__label">{{ progress() }}%</span>
+    </div>
+  }
+
+  @if (workerError()) {
+    <div class="error">
+      Erreur lors du calcul : {{ workerError() }}
+    </div>
+  }
+
+  <details class="advanced-options">
+    <summary class="advanced-options__summary">Seuils killer / passeur</summary>
+    <div class="advanced-options__content">
+      <p class="options-desc">
+        Chaque équipe aura au moins un <strong>killer</strong> (attaque ≥ seuil) et un <strong>passeur</strong> (passe ≥ seuil).
+      </p>
+      <div class="param-grid">
+        <div class="param-item">
+          <label class="param-label">Seuil killer (attaque)</label>
+          <input
+            class="param-input"
+            type="number"
+            min="1"
+            max="10"
+            [ngModel]="killerThreshold()"
+            (ngModelChange)="killerThreshold.set($event)"
+          />
+        </div>
+        <div class="param-item">
+          <label class="param-label">Seuil passeur (passe)</label>
+          <input
+            class="param-input"
+            type="number"
+            min="1"
+            max="10"
+            [ngModel]="passerThreshold()"
+            (ngModelChange)="passerThreshold.set($event)"
+          />
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="advanced-options">
+    <summary class="advanced-options__summary">Équilibrage global / défense / attaque</summary>
+    <div class="advanced-options__content">
+      <p class="options-desc">
+        Écart maximum autorisé entre équipes (score global, défense et attaque). Plus la valeur est basse, plus les équipes seront équilibrées sur les trois critères. 0 = optimisation maximale.
+      </p>
+      <div class="param-grid">
+        <div class="param-item">
+          <label class="param-label">Delta max (écart entre équipes)</label>
+          <input
+            class="param-input"
+            type="number"
+            min="0"
+            max="10"
+            step="0.5"
+            [ngModel]="maxGlobalDelta()"
+            (ngModelChange)="maxGlobalDelta.set($event)"
+          />
+        </div>
+      </div>
+    </div>
+  </details>
+
+  @if (teams().length > 0) {
+    <div class="teams-actions">
+      <button class="copy-btn" (click)="copyTeams()">Copier les équipes</button>
+    </div>
+    <div class="teams-grid">
+      @for (team of teams(); track $index) {
+        <div class="team-card">
+          <div class="team-card__header">
+            Équipe {{ $index + 1 }}
+            <span class="team-card__count">{{ team.team.length }} joueurs</span>
+          </div>
+          <ul class="team-card__players">
+            @for (player of team.team; track player.id) {
+              <li class="player-row">
+                <span class="player-name">{{ player.name }}</span>
+                <span class="player-meta">{{ player.gender }} · {{ player.global_impact }}<br/> {{ player.attack }} · {{ player.set }} · {{ player.defense }}</span>
+              </li>
+            }
+          </ul>
+          <div class="team-card__score">
+            <span class="team-card__score-label">Score global</span>
+            <span class="team-card__score-value">{{ team.value }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

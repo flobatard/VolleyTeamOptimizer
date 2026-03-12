@@ -47,6 +47,13 @@ export const routes: Routes = [
                 (m) => m.GeneticSolverComponent
               ),
           },
+          {
+            path: 'vtest',
+            loadComponent: () =>
+              import('./features/solvers/vtest-solver-component/vtest-solver-component').then(
+                (m) => m.VtestSolverComponent
+              ),
+          },
         ],
       },
     ],

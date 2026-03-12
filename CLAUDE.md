@@ -92,6 +92,8 @@ Marie;F;8;7;7;9
 | `VTO_volleyball_selected_ids` | Selected player IDs (JSON) |
 | `VTO_genetic_solver_params` | Algorithm parameters (JSON) |
 | `VTO_genetic_solver_teams` | Last generated teams (JSON) |
+| `VTO_vtest_solver_params` | vTest algorithm parameters (JSON) |
+| `VTO_vtest_solver_teams` | vTest last generated teams (JSON) |
 
 ## Core Algorithm — Genetic Solver
 
