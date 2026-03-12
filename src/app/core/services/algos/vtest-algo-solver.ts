@@ -121,7 +121,7 @@ export class VTestAlgoSolver {
         }
       }
 
-      // 2. Réparer répartition des filles (si moins de filles que d'équipes)
+      // 2. Réparer répartition des filles (si moins de filles que d'équipes : max 1 par équipe)
       if (numGirls < numTeams) {
         const genderRepaired = this.tryRepairGender(
           teams,
@@ -134,8 +134,24 @@ export class VTestAlgoSolver {
         }
       }
 
+      // 3. Réparer répartition des filles (si assez de filles : au moins 1 par équipe)
+      if (numGirls >= numTeams) {
+        const genderSpreadRepaired = this.tryRepairGenderSpread(
+          teams,
+          killerThreshold,
+          passerThreshold
+        );
+        if (genderSpreadRepaired) {
+          teams = genderSpreadRepaired;
+          continue;
+        }
+      }
+
       // Plus rien à réparer ou bloqué
-      if (invalidTeamIdx === -1 && (numGirls >= numTeams || !this.hasGenderImbalance(teams))) {
+      if (
+        invalidTeamIdx === -1 &&
+        (numGirls < numTeams ? !this.hasGenderImbalance(teams) : !this.hasGenderSpreadImbalance(teams, numGirls))
+      ) {
         return { teams, valid: true, invalidCount: 0 };
       }
       if (invalidTeamIdx >= 0) {
@@ -156,8 +172,14 @@ export class VTestAlgoSolver {
     return { teams, valid: invalidCount === 0, invalidCount };
   }
 
+  /** Quand moins de filles que d'équipes : déséquilibre = une équipe a 2+ filles */
   private hasGenderImbalance(teams: Player[][]): boolean {
     return teams.some((team) => team.filter((p) => p.gender === 'F').length > 1);
+  }
+
+  /** Quand assez de filles pour toutes les équipes : déséquilibre = une équipe a 0 fille */
+  private hasGenderSpreadImbalance(teams: Player[][], numGirls: number): boolean {
+    return numGirls >= teams.length && teams.some((team) => team.filter((p) => p.gender === 'F').length === 0);
   }
 
   /**
@@ -214,6 +236,59 @@ export class VTestAlgoSolver {
   }
 
   /**
+   * Quand il y a assez de filles pour toutes les équipes : déplace une fille d'une équipe
+   * qui en a 2+ vers une équipe qui en a 0, sans casser killer/passer.
+   */
+  private tryRepairGenderSpread(
+    teams: Player[][],
+    killerThreshold: number,
+    passerThreshold: number
+  ): Player[][] | null {
+    const numGirls = teams.flat().filter((p) => p.gender === 'F').length;
+    if (numGirls < teams.length) return null;
+
+    for (let fromIdx = 0; fromIdx < teams.length; fromIdx++) {
+      const fromTeam = teams[fromIdx];
+      const girlsInFrom = fromTeam.filter((p) => p.gender === 'F');
+      if (girlsInFrom.length < 2) continue;
+
+      for (let toIdx = 0; toIdx < teams.length; toIdx++) {
+        if (toIdx === fromIdx) continue;
+        const toTeam = teams[toIdx];
+        if (toTeam.some((p) => p.gender === 'F')) continue;
+
+        for (const girl of girlsInFrom) {
+          for (let j = 0; j < toTeam.length; j++) {
+            const nonGirl = toTeam[j];
+            if (nonGirl.gender === 'F') continue;
+
+            const girlIdx = fromTeam.indexOf(girl);
+            const newFrom = fromTeam.filter((_, i) => i !== girlIdx);
+            newFrom.push(nonGirl);
+            const newTo = toTeam.filter((_, i) => i !== j);
+            newTo.push(girl);
+
+            const fromStillValid =
+              newFrom.some((p) => p.attack >= killerThreshold) &&
+              newFrom.some((p) => p.set >= passerThreshold);
+            const toStillValid =
+              newTo.some((p) => p.attack >= killerThreshold) &&
+              newTo.some((p) => p.set >= passerThreshold);
+
+            if (fromStillValid && toStillValid) {
+              const newTeams = teams.map((t, idx) => [...t]);
+              newTeams[fromIdx] = newFrom;
+              newTeams[toIdx] = newTo;
+              return newTeams;
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
    * Équilibre les équipes par score global, défense et attaque via échanges,
    * sans casser killer/passer/gender.
    * Arrête quand tous les écarts (global, défense, attaque) <= maxGlobalDelta.
@@ -225,7 +300,8 @@ export class VTestAlgoSolver {
     numGirls: number,
     maxGlobalDelta: number
   ): Player[][] {
-    const spreadGirls = numGirls < teams.length;
+    const spreadGirls = numGirls < teams.length; // max 1 fille par équipe
+    const ensureOneGirlPerTeam = numGirls >= teams.length; // au moins 1 fille par équipe
     let current = teams.map((t) => [...t]);
     const maxIter = teams.length * (teams[0]?.length ?? 0) * 5;
 
@@ -257,11 +333,15 @@ export class VTestAlgoSolver {
               const newCost = this.imbalanceCost(newStats);
               if (newCost >= cost) continue;
 
+              const genderOk = spreadGirls
+                ? this.genderValidAfterSwap(current, i, j, pI, pJ)
+                : ensureOneGirlPerTeam
+                  ? this.genderSpreadValidAfterSwap(current, i, j, pI, pJ)
+                  : true;
               if (
                 this.teamValid(newI, killerThreshold, passerThreshold) &&
                 this.teamValid(newJ, killerThreshold, passerThreshold) &&
-                (!spreadGirls ||
-                  this.genderValidAfterSwap(current, i, j, pI, pJ))
+                genderOk
               ) {
                 current = current.map((t, idx) =>
                   idx === i ? newI : idx === j ? newJ : t
@@ -346,6 +426,27 @@ export class VTestAlgoSolver {
       (pIn.gender === 'F' ? 1 : 0) +
       (pOut.gender === 'F' ? 1 : 0);
     return fromGirlsAfter <= 1 && toGirlsAfter <= 1;
+  }
+
+  /** Vérifie qu'après un swap, chaque équipe garde au moins 1 fille (quand assez de filles). */
+  private genderSpreadValidAfterSwap(
+    teams: Player[][],
+    fromIdx: number,
+    toIdx: number,
+    pOut: Player,
+    pIn: Player
+  ): boolean {
+    const fromTeam = teams[fromIdx];
+    const toTeam = teams[toIdx];
+    const fromGirlsAfter =
+      fromTeam.filter((p) => p.gender === 'F').length -
+      (pOut.gender === 'F' ? 1 : 0) +
+      (pIn.gender === 'F' ? 1 : 0);
+    const toGirlsAfter =
+      toTeam.filter((p) => p.gender === 'F').length -
+      (pIn.gender === 'F' ? 1 : 0) +
+      (pOut.gender === 'F' ? 1 : 0);
+    return fromGirlsAfter >= 1 && toGirlsAfter >= 1;
   }
 
   private countInvalidTeams(
