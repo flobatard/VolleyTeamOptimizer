@@ -33,7 +33,7 @@ const DEFAULT_PARAMS: PersistedParams = {
   forceEvenTeams: false,
   killerThreshold: 7,
   passerThreshold: 7,
-  maxGlobalDelta: 1,
+  maxGlobalDelta: 2,
   femaleImpactCoef: 1,
   togetherPairsList: [],
   apartPairsList: [],
@@ -85,6 +85,8 @@ export class Solver2SolverComponent {
   readonly isRunning = signal<boolean>(false);
   readonly workerError = signal<string | null>(null);
   readonly progress = signal<number>(0);
+  /** true si la dernière génération a trouvé une solution valide, false si fallback */
+  readonly lastRunValid = signal<boolean>(true);
 
   private readonly p = loadParams();
 
@@ -292,10 +294,12 @@ export class Solver2SolverComponent {
         this.progress.set(100);
         const killerTh = this.killerThreshold();
         const passerTh = this.passerThreshold();
+        const valid = data.valid ?? true;
         const estimatedTeams = data.teams.map((t: Player[]) =>
           estimateTeamQuality(t, 1, killerTh, passerTh)
         );
         this.teams.set(estimatedTeams);
+        this.lastRunValid.set(valid);
         this.isRunning.set(false);
         worker.terminate();
       }

@@ -6,7 +6,7 @@ addEventListener('message', ({ data }) => {
   try {
     const { players, targetTeamSize, params } = data;
     const solver = new Solver2AlgoSolver();
-    const teams = solver.generateTeams(
+    const { teams, attemptCount, valid } = solver.generateTeams(
       players,
       targetTeamSize,
       params,
@@ -14,7 +14,7 @@ addEventListener('message', ({ data }) => {
         postMessage({ type: 'progress', percent });
       }
     );
-    postMessage({ type: 'success', teams });
+    postMessage({ type: 'success', teams, attemptCount, valid: valid ?? true });
   } catch (error) {
     postMessage({
       type: 'error',

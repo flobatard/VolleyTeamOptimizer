@@ -49,6 +49,15 @@
   font-size: 0.875rem;
 }
 
+.fallback-warning {
+  padding: 0.875rem 1.25rem;
+  background: var(--color-accent-bg);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-lg);
+  color: var(--color-accent-text);
+  font-size: 0.875rem;
+}
+
 .controls {
   display: flex;
   align-items: center;

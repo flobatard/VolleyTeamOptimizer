@@ -225,6 +225,11 @@
   </details>
 
   @if (teams().length > 0) {
+    @if (!lastRunValid()) {
+      <div class="fallback-warning">
+        Aucune solution valide trouvée après le nombre maximum de tentatives. Résultat affiché à titre indicatif. Essayez d'augmenter l'écart max (delta) dans les options avancées.
+      </div>
+    }
     <div class="teams-actions">
       <button class="copy-btn" (click)="copyTeams()">Copier les équipes</button>
     </div>
