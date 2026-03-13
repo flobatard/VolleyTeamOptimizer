@@ -1,9 +1,10 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { PlayerDataService } from '../../../core/services/player-data.service';
+import { ConfirmModal } from '../../../shared/confirm-modal/confirm-modal';
 
 @Component({
   selector: 'app-players-data-view',
-  imports: [],
+  imports: [ConfirmModal],
   templateUrl: './players-data-view.html',
   styleUrl: './players-data-view.scss',
 })
@@ -12,6 +13,8 @@ export class PlayersDataView {
   protected readonly players = this.playerDataService.players;
   protected readonly selectedPlayerIds = this.playerDataService.selectedPlayerIds;
   protected readonly csvImportResult = this.playerDataService.csvImportResult;
+
+  protected readonly playerToDelete = signal<number | null>(null);
 
   protected readonly searchQuery = signal('');
   protected readonly filteredPlayers = computed(() => {
@@ -87,8 +90,20 @@ export class PlayersDataView {
     this.playerDataService.addPlayer();
   }
 
-  deletePlayer(id: number): void {
-    this.playerDataService.deletePlayer(id);
+  confirmDelete(id: number): void {
+    this.playerToDelete.set(id);
+  }
+
+  cancelDelete(): void {
+    this.playerToDelete.set(null);
+  }
+
+  deletePlayer(): void {
+    const id = this.playerToDelete();
+    if (id !== null) {
+      this.playerDataService.deletePlayer(id);
+      this.playerToDelete.set(null);
+    }
   }
 
   updateName(id: number, event: Event): void {

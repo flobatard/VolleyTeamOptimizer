@@ -133,7 +133,7 @@
             </td>
             <td class="col-actions">
               <button class="delete-btn" title="Supprimer"
-                (click)="$event.stopPropagation(); deletePlayer(player.id)">✕</button>
+                (click)="$event.stopPropagation(); confirmDelete(player.id)">✕</button>
             </td>
           </tr>
         }
@@ -148,3 +148,13 @@
     </table>
   }
 </div>
+
+@if (playerToDelete() !== null) {
+  <app-confirm-modal
+    message="Supprimer ce joueur ?"
+    confirmLabel="Supprimer"
+    cancelLabel="Annuler"
+    (confirmed)="deletePlayer()"
+    (cancelled)="cancelDelete()"
+  />
+}

@@ -1,0 +1,9 @@
+<div class="modal-backdrop" (click)="cancelled.emit()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <p class="modal-message">{{ message() }}</p>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn--cancel" (click)="cancelled.emit()">{{ cancelLabel() }}</button>
+      <button class="modal-btn modal-btn--confirm" (click)="confirmed.emit()">{{ confirmLabel() }}</button>
+    </div>
+  </div>
+</div>

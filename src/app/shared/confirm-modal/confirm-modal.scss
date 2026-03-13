@@ -1,0 +1,61 @@
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--color-primary-bg);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 2rem;
+  min-width: 18rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.modal-message {
+  margin: 0;
+  font-size: 1rem;
+  text-align: center;
+  color: var(--color-text);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.modal-btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  cursor: pointer;
+
+  &--cancel {
+    background: var(--color-bg-subtle);
+    border: 1px solid var(--color-border-light);
+    color: var(--color-text);
+
+    &:hover {
+      border-color: var(--color-primary);
+    }
+  }
+
+  &--confirm {
+    background: var(--color-danger);
+    border: 1px solid var(--color-danger);
+    color: var(--color-white);
+
+    &:hover {
+      filter: brightness(1.1);
+    }
+  }
+}
