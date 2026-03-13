@@ -3,7 +3,7 @@ import { PlayerPair } from '../../models/player-pair';
 import { PlayerTeamSizeConstraint } from '../../models/player-team-size-constraint';
 import { computeOptimalNumTeams } from '../team-distribution';
 
-export interface VTestParams {
+export interface Solver2Params {
   /** Seuil attaque pour être considéré comme killer (défaut: 7) */
   KILLER_THRESHOLD?: number;
   /** Seuil passe pour être considéré comme passeur (défaut: 7) */
@@ -31,7 +31,7 @@ export interface VTestParams {
  * - répartition des filles : si moins de filles que d'équipes, max 1 fille par équipe
  * - équilibrage du score global entre équipes
  */
-export class VTestAlgoSolver {
+export class Solver2AlgoSolver {
   private static readonly DEFAULT_KILLER_THRESHOLD = 7;
   private static readonly DEFAULT_PASSER_THRESHOLD = 7;
   private static readonly DEFAULT_MAX_ATTEMPTS = 500;
@@ -40,14 +40,14 @@ export class VTestAlgoSolver {
   generateTeams(
     players: Player[],
     targetTeamSize: number,
-    params: VTestParams = {},
+    params: Solver2Params = {},
     onProgress?: (percent: number) => void
   ): Player[][] {
-    const killerThreshold = params.KILLER_THRESHOLD ?? VTestAlgoSolver.DEFAULT_KILLER_THRESHOLD;
-    const passerThreshold = params.PASSER_THRESHOLD ?? VTestAlgoSolver.DEFAULT_PASSER_THRESHOLD;
-    const maxAttempts = params.MAX_ATTEMPTS ?? VTestAlgoSolver.DEFAULT_MAX_ATTEMPTS;
+    const killerThreshold = params.KILLER_THRESHOLD ?? Solver2AlgoSolver.DEFAULT_KILLER_THRESHOLD;
+    const passerThreshold = params.PASSER_THRESHOLD ?? Solver2AlgoSolver.DEFAULT_PASSER_THRESHOLD;
+    const maxAttempts = params.MAX_ATTEMPTS ?? Solver2AlgoSolver.DEFAULT_MAX_ATTEMPTS;
     const forceEvenTeams = params.FORCE_EVEN_TEAMS ?? false;
-    const maxGlobalDelta = params.MAX_GLOBAL_DELTA ?? VTestAlgoSolver.DEFAULT_MAX_GLOBAL_DELTA;
+    const maxGlobalDelta = params.MAX_GLOBAL_DELTA ?? Solver2AlgoSolver.DEFAULT_MAX_GLOBAL_DELTA;
 
     const numTeams = params.NUM_TEAMS ?? computeOptimalNumTeams(players.length, targetTeamSize, forceEvenTeams);
 

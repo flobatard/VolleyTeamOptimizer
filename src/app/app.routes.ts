@@ -48,10 +48,10 @@ export const routes: Routes = [
               ),
           },
           {
-            path: 'vtest',
+            path: 'solver-2',
             loadComponent: () =>
-              import('./features/solvers/vtest-solver-component/vtest-solver-component').then(
-                (m) => m.VtestSolverComponent
+              import('./features/solvers/solver-2-solver-component/solver-2-solver-component').then(
+                (m) => m.Solver2SolverComponent
               ),
           },
         ],

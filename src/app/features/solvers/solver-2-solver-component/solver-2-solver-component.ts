@@ -12,8 +12,8 @@ import { PlayerTeamSizeConstraint } from '../../../core/models/player-team-size-
 import { ListPairPlayers } from '../../../shared/list-pair-players/list-pair-players';
 
 const TEAM_SIZE_OPTIONS = [3, 4, 5, 6] as const;
-const STORAGE_KEY = 'VTO_vtest_solver_params';
-const STORAGE_KEY_TEAMS = 'VTO_vtest_solver_teams';
+const STORAGE_KEY = 'VTO_solver_2_solver_params';
+const STORAGE_KEY_TEAMS = 'VTO_solver_2_solver_teams';
 
 interface PersistedParams {
   targetTeamSize: number;
@@ -66,12 +66,12 @@ function loadTeams(): EstimatedTeam[] {
 }
 
 @Component({
-  selector: 'app-vtest-solver-component',
+  selector: 'app-solver-2-solver-component',
   imports: [FormsModule, ListPairPlayers],
-  templateUrl: './vtest-solver-component.html',
-  styleUrl: './vtest-solver-component.scss',
+  templateUrl: './solver-2-solver-component.html',
+  styleUrl: './solver-2-solver-component.scss',
 })
-export class VtestSolverComponent {
+export class Solver2SolverComponent {
   protected readonly playerDataService = inject(PlayerDataService);
 
   protected readonly players = this.playerDataService.selectedPlayers;
@@ -91,9 +91,14 @@ export class VtestSolverComponent {
 
   readonly numTeamsRange = computed(() => {
     const n = this.players().length;
+    const forceEven = this.forceEvenTeams();
     const min = 2;
-    const max = n > 0 ? Math.max(2, Math.floor(n / 2)) : 2;
-    return { min, max };
+    let max = n > 0 ? Math.max(2, Math.floor(n / 2)) : 2;
+    if (forceEven && max % 2 !== 0) {
+      max = Math.max(2, max - 1);
+    }
+    const step = forceEven ? 2 : 1;
+    return { min, max, step };
   });
 
   readonly teamDistributionSummary = computed(() => {
@@ -144,9 +149,15 @@ export class VtestSolverComponent {
 
     effect(() => {
       const range = this.numTeamsRange();
-      const current = this.numTeams();
+      const forceEven = this.forceEvenTeams();
+      let current = this.numTeams();
       if (current < range.min || current > range.max) {
-        this.numTeams.set(Math.max(range.min, Math.min(range.max, current)));
+        current = Math.max(range.min, Math.min(range.max, current));
+        this.numTeams.set(current);
+      }
+      if (forceEven && current % 2 !== 0) {
+        const nearestEven = Math.max(range.min, Math.min(range.max, Math.round(current / 2) * 2));
+        this.numTeams.set(nearestEven);
       }
     });
 
@@ -255,7 +266,7 @@ export class VtestSolverComponent {
     this.progress.set(0);
 
     const worker = new Worker(
-      new URL('../workers/vtest-algo.worker', import.meta.url)
+      new URL('../workers/solver-2-algo.worker', import.meta.url)
     );
 
     worker.onmessage = ({ data }) => {

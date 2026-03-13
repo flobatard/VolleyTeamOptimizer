@@ -1,4 +1,4 @@
-<div class="vtest-solver">
+<div class="solver-2-solver">
   @if (players().length === 0) {
     <div class="warning">
       Aucun joueur sélectionné — N'oubliez pas de cocher la ligne pour que le joueur soit pris en compte par le solveur.
@@ -31,6 +31,7 @@
         type="range"
         [min]="numTeamsRange().min"
         [max]="numTeamsRange().max"
+        [step]="numTeamsRange().step"
         [ngModel]="numTeams()"
         (ngModelChange)="numTeams.set(+$event)"
         class="num-teams-range"
@@ -113,12 +114,12 @@
         <div class="team-size-constraint-adder">
           <input
             class="player-input"
-            [attr.list]="'vtest-constraint-players'"
+            [attr.list]="'solver-2-constraint-players'"
             [ngModel]="newConstraintSearchName()"
             (ngModelChange)="onConstraintPlayerChange($event)"
             placeholder="Sélectionner un joueur…"
           />
-          <datalist id="vtest-constraint-players">
+          <datalist id="solver-2-constraint-players">
             @for (player of players(); track player.id) {
               <option [value]="player.name"></option>
             }

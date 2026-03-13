@@ -1,11 +1,11 @@
 /// <reference lib="webworker" />
 
-import { VTestAlgoSolver } from '../../../core/services/algos/vtest-algo-solver';
+import { Solver2AlgoSolver } from '../../../core/services/algos/solver-2-algo-solver';
 
 addEventListener('message', ({ data }) => {
   try {
     const { players, targetTeamSize, params } = data;
-    const solver = new VTestAlgoSolver();
+    const solver = new Solver2AlgoSolver();
     const teams = solver.generateTeams(
       players,
       targetTeamSize,
