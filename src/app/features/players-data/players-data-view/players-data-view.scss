@@ -280,7 +280,15 @@
       flex-wrap: wrap;
       align-items: center;
       border-bottom: 2px solid var(--color-border-muted);
-      padding: 0.10rem 0;
+      padding: 0.1rem 0;
+
+      // Force un saut de ligne entre la ligne nom et la ligne stats
+      &::after {
+        content: '';
+        flex-basis: 100%;
+        height: 0;
+        order: 4;
+      }
     }
 
     td {
@@ -288,13 +296,13 @@
     }
 
     .col-select {
-      flex: 0 0 0.75rem;
+      flex: 0 0 auto;
       order: 1;
     }
 
     .col-name {
-      flex: 1 1 4rem;
-      min-width: 100px;
+      flex: 1 1 0;
+      min-width: 0;
       order: 2;
 
       input[type='text'] {
@@ -303,13 +311,13 @@
     }
 
     .col-actions {
-      flex: 0 0 0.75rem;
+      flex: 0 0 auto;
       order: 3;
     }
 
     .col-gender {
       flex: 1;
-      order: 4;
+      order: 5;
       display: flex;
       flex-direction: column;
       align-items: center;
