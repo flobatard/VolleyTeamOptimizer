@@ -184,9 +184,6 @@ export class GeneticAlgoSolver {
       const settersInTeam = team.filter(p => p.set >= constants.setterThreshold).length;
       const setterOrAttackeInTeam = team.filter(p => p.set >= constants.setterThreshold || p.attack >= constants.attackerThreshold).length;
 
-      // To prevent if someone is both setter and attacker to have seperate roles
-      if (setterOrAttackeInTeam < 1 + constants.attackersPerTeam && settersInTeam > 0) teamCost += constants.attackAbsencePenalty;
-
       // Utilisation du carré (Math.pow) pour lisser les écarts et pénaliser plus durement les gros déséquilibres
       const globalCost = Math.pow(teamMeanGlobal - constants.targetMeanGlobal, 2) * (genome.length / numTeams) * constants.globalMeanPenaltyFactor;
       
@@ -204,10 +201,12 @@ export class GeneticAlgoSolver {
       teamCost += setterCost
 
       let attackCost = 0
-      let abscenceAttackPenalty = 0
-      
 
       // Attaquant
+      let abscenceAttackPenalty = 0
+      // To prevent if someone is both setter and attacker to have seperate roles
+      if (setterOrAttackeInTeam < 1 + constants.attackersPerTeam && settersInTeam > 0) abscenceAttackPenalty += constants.attackAbsencePenalty;
+
       if (constants.attackerThreshold > bestAttack) abscenceAttackPenalty += constants.attackAbsencePenalty;
       if (attackersInTeam < constants.attackersPerTeam) abscenceAttackPenalty += constants.attackAbsencePenalty * (constants.attackersPerTeam - attackersInTeam);
       const meanAttackPenalty = Math.pow(constants.targetMeanAttack - teamAttack, 2) * (genome.length / numTeams);
