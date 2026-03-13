@@ -1,0 +1,84 @@
+<div class="modal-backdrop" (click)="cancel()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h2 class="modal-title">Ajouter un joueur</h2>
+    <form class="modal-form" (ngSubmit)="validate()">
+      <div class="form-group">
+        <label for="name">Nom</label>
+        <input
+          id="name"
+          type="text"
+          [(ngModel)]="form.name"
+          name="name"
+          placeholder="Nom du joueur"
+          required
+        />
+      </div>
+      <div class="form-group">
+        <label for="gender">Genre</label>
+        <select id="gender" [(ngModel)]="form.gender" name="gender">
+          <option value="H">H</option>
+          <option value="F">F</option>
+          <option value="A">A</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="global_impact">Note globale</label>
+          <input
+            id="global_impact"
+            type="number"
+            [(ngModel)]="form.global_impact"
+            name="global_impact"
+            min="1"
+            max="10"
+            step="0.5"
+          />
+        </div>
+        <div class="form-group">
+          <label for="attack">Attaque</label>
+          <input
+            id="attack"
+            type="number"
+            [(ngModel)]="form.attack"
+            name="attack"
+            min="1"
+            max="10"
+            step="0.5"
+          />
+        </div>
+        <div class="form-group">
+          <label for="set">Passe</label>
+          <input
+            id="set"
+            type="number"
+            [(ngModel)]="form.set"
+            name="set"
+            min="1"
+            max="10"
+            step="0.5"
+          />
+        </div>
+        <div class="form-group">
+          <label for="defense">Défense</label>
+          <input
+            id="defense"
+            type="number"
+            [(ngModel)]="form.defense"
+            name="defense"
+            min="1"
+            max="10"
+            step="0.5"
+          />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="modal-btn modal-btn--cancel" (click)="cancel()">
+          Annuler
+        </button>
+        <button type="submit" class="modal-btn modal-btn--confirm" [disabled]="!form.name.trim()">
+          Ajouter
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

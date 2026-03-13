@@ -11,17 +11,16 @@
     }
   }
 
-  @if (players().length > 0) {
-    <input
-      class="search-input"
-      type="search"
-      placeholder="Rechercher un joueur..."
-      [value]="searchQuery()"
-      (input)="searchQuery.set($any($event.target).value)"
-    />
-  }
-
-  <div class="toolbar">
+  <div class="actions-bar">
+    @if (players().length > 0) {
+      <input
+        class="search-input"
+        type="search"
+        placeholder="Rechercher un joueur..."
+        [value]="searchQuery()"
+        (input)="searchQuery.set($any($event.target).value)"
+      />
+    }
     <input
       type="file"
       accept=".csv"
@@ -29,37 +28,42 @@
       (change)="onFileSelected($event)"
       style="display: none"
     />
-    <button class="import-btn" (click)="fileInput.click()">
-      Importer un fichier CSV
+    <button class="btn btn--secondary" (click)="fileInput.click()">
+      Importer CSV
     </button>
     @if (players().length > 0) {
-      <button class="export-btn" (click)="exportCsv()">
-        Exporter en CSV
-      </button>
-    }
-    @if (players().length === 0) {
-      <button class="add-btn" (click)="addPlayer()">
-        + Ajouter un joueur
+      <button class="btn btn--secondary" (click)="exportCsv()">
+        Exporter CSV
       </button>
     }
   </div>
 
   @if (players().length > 0) {
-    <div class="selection-count">
-      {{ selectedPlayerIds().size }} / {{ players().length }} joueur{{ players().length > 1 ? 's' : '' }} sélectionné{{ selectedPlayerIds().size > 1 ? 's' : '' }}
+    <div class="controls-bar">
+      <div class="controls-bar__selection">
+        <span class="selection-count">
+          {{ selectedPlayerIds().size }} / {{ players().length }} sélectionné{{ selectedPlayerIds().size > 1 ? 's' : '' }}
+        </span>
+        <button class="btn btn--ghost" (click)="selectAll()">Tout</button>
+        <button class="btn btn--ghost" (click)="deselectAll()">Aucun</button>
+      </div>
+      <div class="controls-bar__sort">
+        <span class="sort-label">Trier :</span>
+        <button class="sort-pill" [class.sort-pill--active]="sortField() === 'global_impact'" (click)="setSort('global_impact')">
+          Note globale @if (sortField() === 'global_impact') { {{ sortIcon('global_impact') }} }
+        </button>
+        <button class="sort-pill" [class.sort-pill--active]="sortField() === 'name'" (click)="setSort('name')">
+          Nom @if (sortField() === 'name') { {{ sortIcon('name') }} }
+        </button>
+        <button class="sort-pill" [class.sort-pill--active]="sortField() === 'selected'" (click)="setSort('selected')">
+          Sélection @if (sortField() === 'selected') { {{ sortIcon('selected') }} }
+        </button>
+        <button class="sort-pill" [class.sort-pill--active]="sortField() === 'id'" (click)="setSort('id')">
+          Par défaut @if (sortField() === 'id') { {{ sortIcon('id') }} }
+        </button>
+      </div>
     </div>
-    <div class="sort-bar">
-      Trier par :
-      <button class="sort-pill" [class.sort-pill--active]="sortField() === 'name'" (click)="setSort('name')">
-        Nom @if (sortField() === 'name') { {{ sortIcon('name') }} }
-      </button>
-      <button class="sort-pill" [class.sort-pill--active]="sortField() === 'selected'" (click)="setSort('selected')">
-        Sélection @if (sortField() === 'selected') { {{ sortIcon('selected') }} }
-      </button>
-      <button class="sort-pill" [class.sort-pill--active]="sortField() === 'id'" (click)="setSort('id')">
-        Par défaut @if (sortField() === 'id') { {{ sortIcon('id') }} }
-      </button>
-    </div>
+    <div class="players-list-scroll">
     <table class="players-table">
       <thead>
         <tr>
@@ -77,7 +81,10 @@
             <button class="sort-btn" (click)="setSort('name')" title="Trier par nom">{{ sortIcon('name') }}</button>
           </th>
           <th>Genre</th>
-          <th>Note globale</th>
+          <th>
+            Note globale
+            <button class="sort-btn" (click)="setSort('global_impact')" title="Trier par note globale">{{ sortIcon('global_impact') }}</button>
+          </th>
           <th>Attaque</th>
           <th>Passe</th>
           <th>Défense</th>
@@ -138,16 +145,26 @@
           </tr>
         }
       </tbody>
-      <tfoot>
-        <tr>
-          <td colspan="8" class="add-row">
-            <button class="add-btn" (click)="addPlayer()">+ Ajouter un joueur</button>
-          </td>
-        </tr>
-      </tfoot>
     </table>
+    </div>
   }
+
+  <button
+    class="fab"
+    (click)="openAddPlayerModal()"
+    title="Ajouter un joueur"
+    aria-label="Ajouter un joueur"
+  >
+    +
+  </button>
 </div>
+
+@if (showAddPlayerModal()) {
+  <app-add-player-modal
+    (playerAdded)="onPlayerAdded($event)"
+    (cancelled)="closeAddPlayerModal()"
+  />
+}
 
 @if (playerToDelete() !== null) {
   <app-confirm-modal

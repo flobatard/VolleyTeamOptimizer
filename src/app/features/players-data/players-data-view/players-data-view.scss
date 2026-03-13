@@ -1,7 +1,26 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .players-view {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
+  gap: 1rem;
+  overflow: hidden;
+}
+
+.players-list-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
 }
 
 // ── Feedback import ───────────────────────────────────────────────────────────
@@ -24,16 +43,27 @@
   }
 }
 
-// ── Search ────────────────────────────────────────────────────────────────────
+// ── Actions bar ───────────────────────────────────────────────────────────────
+
+.actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg-subtle);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+}
 
 .search-input {
   width: 100%;
-  max-width: 20rem;
+  max-width: 16rem;
   padding: 0.5rem 0.875rem;
   border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   font-size: 0.9rem;
-  background: var(--color-bg-subtle);
+  background: var(--color-primary-bg);
   color: var(--color-text);
 
   &:focus {
@@ -42,86 +72,109 @@
   }
 }
 
-// ── Toolbar ───────────────────────────────────────────────────────────────────
+// ── Buttons ──────────────────────────────────────────────────────────────────
 
-.toolbar {
+.btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+  white-space: nowrap;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &--primary {
+    background: var(--color-success);
+    border: 1px solid var(--color-success);
+    color: var(--color-white);
+
+    &:hover {
+      filter: brightness(1.08);
+    }
+  }
+
+  &--primary.btn--outline {
+    background: transparent;
+    color: var(--color-success);
+    border-color: var(--color-success);
+
+    &:hover {
+      background: color-mix(in srgb, var(--color-success) 12%, transparent);
+    }
+  }
+
+  &--secondary {
+    background: var(--color-primary-bg);
+    border: 1px solid var(--color-border-light);
+    color: var(--color-text);
+
+    &:hover {
+      border-color: var(--color-primary);
+      background: var(--color-primary-bg);
+    }
+  }
+
+  &--ghost {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--color-text-muted);
+    padding: 0.35rem 0.6rem;
+    font-size: 0.8rem;
+
+    &:hover {
+      color: var(--color-primary);
+      background: var(--color-primary-bg);
+    }
+  }
+}
+
+// ── Controls bar (selection + sort) ─────────────────────────────────────────────
+
+.controls-bar {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: space-between;
+  gap: 1rem;
   flex-wrap: wrap;
+  padding: 0.5rem 0;
 }
 
-.import-btn {
-  padding: 0.625rem 1.5rem;
-  background: var(--color-accent);
-  color: var(--color-text-dark);
-
-  &:hover {
-    background: var(--color-accent-hover);
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
+.controls-bar__selection {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
-
-.add-btn {
-  padding: 0.625rem 1.5rem;
-  background: var(--color-success);
-  color: var(--color-white);
-
-  &:hover {
-    background: var(--color-success-hover);
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-}
-
-.export-btn {
-  padding: 0.625rem 1.5rem;
-  background: var(--color-primary);
-  color: var(--color-white);
-
-  &:hover {
-    background: var(--color-primary-hover);
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-}
-
-// ── Selection count ───────────────────────────────────────────────────────────
 
 .selection-count {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
+  margin-right: 0.25rem;
 }
 
-// ── Sort bar (mobile only) ────────────────────────────────────────────────────
-
-.sort-bar {
-  display: none;
+.controls-bar__sort {
+  display: flex;
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+.sort-label {
   font-size: 0.8rem;
   color: var(--color-text-muted);
-
-  @media (max-width: 700px) {
-    display: flex;
-  }
 }
 
 .sort-pill {
-  padding: 0.3rem 0.75rem;
+  padding: 0.3rem 0.65rem;
   border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   background: var(--color-bg-subtle);
   color: var(--color-text);
   font-size: 0.8rem;
@@ -156,6 +209,10 @@
     text-align: left;
     font-weight: 600;
     letter-spacing: 0.02em;
+    position: sticky;
+    top: 0;
+    background: var(--color-primary);
+    z-index: 1;
   }
 
   td {
@@ -219,11 +276,6 @@
     &:hover {
       background: var(--color-danger-bg);
     }
-  }
-
-  tfoot .add-row {
-    padding: 0.5rem 1rem;
-    border-top: 2px solid var(--color-border-light);
   }
 
   .col-name {
@@ -357,8 +409,34 @@
       }
     }
 
-    tfoot tr {
-      display: block;
-    }
+  }
+}
+
+// ── Floating Action Button ─────────────────────────────────────────────────────
+
+.fab {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-success);
+  color: var(--color-white);
+  font-size: 1.75rem;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+
+  &:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  }
+
+  &:active {
+    transform: scale(0.98);
   }
 }

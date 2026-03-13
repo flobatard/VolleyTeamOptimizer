@@ -112,9 +112,13 @@ export class PlayerDataService {
   }
 
   addPlayer(): void {
+    this.addPlayerWithData({ name: '', gender: 'H', global_impact: 5, attack: 5, set: 5, defense: 5 });
+  }
+
+  addPlayerWithData(data: Omit<Player, 'id'>): void {
     const players = this._players();
     const nextId = players.length > 0 ? Math.max(...players.map((p) => p.id)) + 1 : 0;
-    const newPlayer: Player = { id: nextId, name: '', gender: 'H', global_impact: 5, attack: 5, set: 5, defense: 5 };
+    const newPlayer: Player = { id: nextId, ...data };
     const updated = [...players, newPlayer];
     this._players.set(updated);
     const selectedIds = new Set(this._selectedPlayerIds());
