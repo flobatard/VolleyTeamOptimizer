@@ -56,6 +56,7 @@ export class PlayerDataService {
       try {
         const text = event.target?.result as string;
         const lines = text.split('\n').filter((l) => l.trim().length > 0);
+        const separator = lines[0]?.includes(';') ? ';' : ',';
         const dataLines = lines.slice(1);
         if (dataLines.length === 0) {
           this.csvImportResult.set({ success: false, error: 'Le fichier ne contient aucun joueur.' });
@@ -63,7 +64,7 @@ export class PlayerDataService {
         }
         const players: Player[] = [];
         for (let i = 0; i < dataLines.length; i++) {
-          const parts = dataLines[i].split(';');
+          const parts = dataLines[i].split(separator);
           if (parts.length < 6) {
             this.csvImportResult.set({ success: false, error: `Ligne ${i + 2} : format invalide (${parts.length} colonnes au lieu de 6).` });
             return;
