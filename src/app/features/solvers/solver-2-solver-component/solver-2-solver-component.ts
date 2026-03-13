@@ -22,6 +22,7 @@ interface PersistedParams {
   killerThreshold: number;
   passerThreshold: number;
   maxGlobalDelta: number;
+  femaleImpactCoef: number;
   togetherPairsList: PlayerPair[];
   apartPairsList: PlayerPair[];
   playerTeamSizeConstraints: PlayerTeamSizeConstraint[];
@@ -33,6 +34,7 @@ const DEFAULT_PARAMS: PersistedParams = {
   killerThreshold: 7,
   passerThreshold: 7,
   maxGlobalDelta: 1,
+  femaleImpactCoef: 1,
   togetherPairsList: [],
   apartPairsList: [],
   playerTeamSizeConstraints: [],
@@ -50,6 +52,10 @@ function loadParams(): PersistedParams {
       if (!Array.isArray(parsed.apartPairsList)) parsed.apartPairsList = DEFAULT_PARAMS.apartPairsList;
       if (!Array.isArray(parsed.playerTeamSizeConstraints)) {
         parsed.playerTeamSizeConstraints = DEFAULT_PARAMS.playerTeamSizeConstraints;
+      }
+      const coef = parsed.femaleImpactCoef;
+      if (typeof coef !== 'number' || coef < 0.1 || coef > 1) {
+        parsed.femaleImpactCoef = DEFAULT_PARAMS.femaleImpactCoef;
       }
       return parsed;
     }
@@ -112,6 +118,7 @@ export class Solver2SolverComponent {
   protected readonly killerThreshold = signal(this.p.killerThreshold);
   protected readonly passerThreshold = signal(this.p.passerThreshold);
   protected readonly maxGlobalDelta = signal(this.p.maxGlobalDelta);
+  protected readonly femaleImpactCoef = signal(this.p.femaleImpactCoef);
 
   protected readonly togetherPairsList = signal<PlayerPair[]>(this.p.togetherPairsList);
   protected readonly apartPairsList = signal<PlayerPair[]>(this.p.apartPairsList);
@@ -187,6 +194,7 @@ export class Solver2SolverComponent {
         killerThreshold: this.killerThreshold(),
         passerThreshold: this.passerThreshold(),
         maxGlobalDelta: this.maxGlobalDelta(),
+        femaleImpactCoef: this.femaleImpactCoef(),
         togetherPairsList: this.togetherPairsList(),
         apartPairsList: this.apartPairsList(),
         playerTeamSizeConstraints: this.playerTeamSizeConstraints(),
@@ -245,6 +253,10 @@ export class Solver2SolverComponent {
 
   protected formatExcludedSizes(constraint: PlayerTeamSizeConstraint): string {
     return constraint.excludedSizes.join(', ');
+  }
+
+  protected setFemaleImpactCoef(value: number): void {
+    this.femaleImpactCoef.set(Math.max(0.1, Math.min(1, +value)));
   }
 
   copyTeams(): void {
@@ -306,6 +318,7 @@ export class Solver2SolverComponent {
         PASSER_THRESHOLD: this.passerThreshold(),
         FORCE_EVEN_TEAMS: this.forceEvenTeams(),
         MAX_GLOBAL_DELTA: this.maxGlobalDelta(),
+        FEMALE_IMPACT_COEF: this.femaleImpactCoef(),
         TOGETHER_PAIRS: this.togetherPairsList(),
         APART_PAIRS: this.apartPairsList(),
         PLAYER_TEAM_SIZE_CONSTRAINTS: this.playerTeamSizeConstraints(),

@@ -207,6 +207,19 @@
             (ngModelChange)="maxGlobalDelta.set($event)"
           />
         </div>
+        <div class="param-item">
+          <label class="param-label">Impact des filles (0.1–1)</label>
+          <input
+            class="param-input"
+            type="number"
+            min="0.1"
+            max="1"
+            step="0.1"
+            [ngModel]="femaleImpactCoef()"
+            (ngModelChange)="setFemaleImpactCoef($event)"
+          />
+          <span class="param-hint">1 = égal aux garçons, 0.8 = une fille compte 80 % d'un garçon de même niveau</span>
+        </div>
       </div>
     </div>
   </details>

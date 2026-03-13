@@ -8,6 +8,8 @@ export interface Solver2Params {
   KILLER_THRESHOLD?: number;
   /** Seuil passe pour être considéré comme passeur (défaut: 7) */
   PASSER_THRESHOLD?: number;
+  /** Coefficient d'impact des filles pour l'équilibrage (0.1–1). 1 = égal aux garçons, 0.8 = une fille compte 80 % d'un garçon de même niveau. */
+  FEMALE_IMPACT_COEF?: number;
   /** Nombre de tentatives de randomisation pour trouver une solution valide */
   MAX_ATTEMPTS?: number;
   /** Forcer un nombre pair d'équipes */
@@ -36,6 +38,7 @@ export class Solver2AlgoSolver {
   private static readonly DEFAULT_PASSER_THRESHOLD = 7;
   private static readonly DEFAULT_MAX_ATTEMPTS = 500;
   private static readonly DEFAULT_MAX_GLOBAL_DELTA = 1;
+  private static readonly DEFAULT_FEMALE_IMPACT_COEF = 1;
 
   generateTeams(
     players: Player[],
@@ -48,6 +51,7 @@ export class Solver2AlgoSolver {
     const maxAttempts = params.MAX_ATTEMPTS ?? Solver2AlgoSolver.DEFAULT_MAX_ATTEMPTS;
     const forceEvenTeams = params.FORCE_EVEN_TEAMS ?? false;
     const maxGlobalDelta = params.MAX_GLOBAL_DELTA ?? Solver2AlgoSolver.DEFAULT_MAX_GLOBAL_DELTA;
+    const femaleImpactCoef = Math.max(0.1, Math.min(1, params.FEMALE_IMPACT_COEF ?? Solver2AlgoSolver.DEFAULT_FEMALE_IMPACT_COEF));
 
     const numTeams = params.NUM_TEAMS ?? computeOptimalNumTeams(players.length, targetTeamSize, forceEvenTeams);
 
@@ -87,6 +91,7 @@ export class Solver2AlgoSolver {
           passerThreshold,
           numGirls,
           maxGlobalDelta,
+          femaleImpactCoef,
           constraintParams
         );
       }
@@ -105,6 +110,7 @@ export class Solver2AlgoSolver {
       passerThreshold,
       numGirls,
       maxGlobalDelta,
+      femaleImpactCoef,
       constraintParams
     );
   }
@@ -537,6 +543,7 @@ export class Solver2AlgoSolver {
     passerThreshold: number,
     numGirls: number,
     maxGlobalDelta: number,
+    femaleImpactCoef: number,
     constraintParams: {
       togetherPairs: PlayerPair[];
       apartPairs: PlayerPair[];
@@ -552,7 +559,7 @@ export class Solver2AlgoSolver {
     const maxIter = teams.length * (teams[0]?.length ?? 0) * 5;
 
     for (let iter = 0; iter < maxIter; iter++) {
-      const stats = this.computeTeamStats(current);
+      const stats = this.computeTeamStats(current, femaleImpactCoef);
       const cost = this.imbalanceCost(stats);
       if (maxGlobalDelta > 0 && this.maxGap(stats) <= maxGlobalDelta) break;
 
@@ -574,7 +581,7 @@ export class Solver2AlgoSolver {
               const newTeams = current.map((t, idx) =>
                 idx === i ? newI : idx === j ? newJ : t
               );
-              const newStats = this.computeTeamStats(newTeams);
+              const newStats = this.computeTeamStats(newTeams, femaleImpactCoef);
               const newCost = this.imbalanceCost(newStats);
               if (newCost >= cost) continue;
 
@@ -610,18 +617,23 @@ export class Solver2AlgoSolver {
     return current;
   }
 
+  private weight(p: Player, coef: number): number {
+    return p.gender === 'F' ? coef : 1;
+  }
+
   private computeTeamStats(
-    teams: Player[][]
+    teams: Player[][],
+    femaleImpactCoef: number
   ): { global: number[]; defense: number[]; attack: number[] } {
     return {
       global: teams.map((t) =>
-        t.reduce((s, p) => s + p.global_impact, 0) / t.length
+        t.reduce((s, p) => s + p.global_impact * this.weight(p, femaleImpactCoef), 0) / t.length
       ),
       defense: teams.map((t) =>
-        t.reduce((s, p) => s + p.defense, 0) / t.length
+        t.reduce((s, p) => s + p.defense * this.weight(p, femaleImpactCoef), 0) / t.length
       ),
       attack: teams.map((t) =>
-        t.reduce((s, p) => s + p.attack, 0) / t.length
+        t.reduce((s, p) => s + p.attack * this.weight(p, femaleImpactCoef), 0) / t.length
       ),
     };
   }
