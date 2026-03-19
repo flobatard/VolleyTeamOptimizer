@@ -249,7 +249,10 @@
           <ul class="team-card__players">
             @for (player of team.team; track player.id) {
               <li class="player-row">
-                <span class="player-name">{{ player.name }}</span>
+                <span class="player-name">
+                  @if (player.isCaptain) { <span class="captain-badge" title="Capitaine">★</span> }
+                  {{ player.name }}
+                </span>
                 <span class="player-meta">{{ player.gender }} · {{ player.global_impact }}<br/> {{ player.attack }} · {{ player.set }} · {{ player.defense }}</span>
               </li>
             }

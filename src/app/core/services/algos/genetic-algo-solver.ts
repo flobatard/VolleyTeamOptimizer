@@ -55,6 +55,7 @@ interface GameConstants {
   togetherPairs: PlayerPair[];
   apartPairs: PlayerPair[];
   pairConstraintPenalty: number;
+  captainImbalancePenalty: number;
 }
 
 export class GeneticAlgoSolver {
@@ -155,6 +156,7 @@ export class GeneticAlgoSolver {
       togetherPairs: params.TOGETHER_PAIRS ?? [],
       apartPairs: params.APART_PAIRS ?? [],
       pairConstraintPenalty: params.PAIR_CONSTRAINT_PENALTY ?? 1000,
+      captainImbalancePenalty: 100,
     };
   }
 
@@ -164,7 +166,8 @@ export class GeneticAlgoSolver {
     const detailCost : {gender: number, teamQualities: number, pairPenalities: number} = {gender: 0, teamQualities: 0, pairPenalities: 0}
 
     let max_female = 0, min_female = genome.length;
-    let max_male_other = 0, min_male_other = genome.length
+    let max_male_other = 0, min_male_other = genome.length;
+    let max_captains = 0, min_captains = genome.length;
 
     let teamsCost : {team: Player[], cost: number}[] = []; 
     let detailsTeamsCost : {team: Player[], global: number, defense: number, set: number, attack: number, attackDetails: {abscencePenalty: number, meanPenalty: number}}[] = []
@@ -222,11 +225,14 @@ export class GeneticAlgoSolver {
 
       // Mixité
       const females = team.filter(p => p.gender === 'F').length;
-      const males_others = team.filter(p => p.gender === 'M' || p.gender  === "A").length
+      const males_others = team.filter(p => p.gender === 'M' || p.gender  === "A").length;
+      const captains = team.filter(p => p.isCaptain).length;
       max_female = Math.max(females, max_female);
       min_female = Math.min(females, min_female);
-      max_male_other = Math.max(males_others, max_male_other)
-      min_male_other = Math.min(males_others, min_male_other)
+      max_male_other = Math.max(males_others, max_male_other);
+      min_male_other = Math.min(males_others, min_male_other);
+      max_captains = Math.max(captains, max_captains);
+      min_captains = Math.min(captains, min_captains);
 
       totalCost += teamCost;
       teamsCost.push({team: team, cost: teamCost})
@@ -251,7 +257,11 @@ export class GeneticAlgoSolver {
 
     if (max_male_other - min_male_other > 1) {
       totalCost += 100 * numTeams;
-      detailCost.gender = 100 * numTeams
+      detailCost.gender += 100 * numTeams;
+    }
+
+    if (max_captains - min_captains > 1) {
+      totalCost += constants.captainImbalancePenalty * numTeams;
     }
 
     let pairPenalities = 0;

@@ -131,6 +131,10 @@ export class PlayersDataView {
     this.playerDataService.updatePlayer(id, { name: value });
   }
 
+  toggleCaptain(id: number): void {
+    this.playerDataService.toggleCaptain(id);
+  }
+
   updateGender(id: number, event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
     this.playerDataService.updatePlayer(id, { gender: value });

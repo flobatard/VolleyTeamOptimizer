@@ -140,7 +140,11 @@ export class PlayerDataService {
     }
   }
 
-  updatePlayer(id: number, changes: Partial<Pick<Player, 'name' | 'global_impact' | 'attack' | 'set' | 'defense' | 'gender'>>): void {
+  toggleCaptain(id: number): void {
+    this.updatePlayer(id, { isCaptain: !this._players().find((p) => p.id === id)?.isCaptain });
+  }
+
+  updatePlayer(id: number, changes: Partial<Pick<Player, 'name' | 'global_impact' | 'attack' | 'set' | 'defense' | 'gender' | 'isCaptain'>>): void {
     const updated = this._players().map((p) => (p.id === id ? { ...p, ...changes } : p));
     this._players.set(updated);
     this.persist(updated);

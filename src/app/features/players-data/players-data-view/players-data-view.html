@@ -85,6 +85,7 @@
             Nom
             <button class="sort-btn" (click)="setSort('name')" title="Trier par nom">{{ sortIcon('name') }}</button>
           </th>
+          <th class="col-captain" title="Capitaine">Cap.</th>
           <th>Genre</th>
           <th>
             Note globale
@@ -111,6 +112,14 @@
               <input type="text" [value]="player.name" placeholder="Nom"
                 (click)="$event.stopPropagation()"
                 (change)="updateName(player.id, $event)" />
+            </td>
+            <td class="col-captain">
+              <button
+                class="captain-toggle"
+                [class.captain-toggle--active]="player.isCaptain"
+                title="{{ player.isCaptain ? 'Retirer capitaine' : 'Nommer capitaine' }}"
+                (click)="$event.stopPropagation(); toggleCaptain(player.id)"
+              >★</button>
             </td>
             <td class="col-gender" data-label="Genre">
               <select
@@ -152,7 +161,7 @@
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="8" class="add-row">
+          <td colspan="9" class="add-row">
             <button class="add-btn" (click)="openAddPlayerModal()">+ Ajouter un joueur</button>
           </td>
         </tr>

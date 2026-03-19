@@ -5,5 +5,6 @@ export interface Player {
     defense: number,
     set: number,
     global_impact: number,
-    gender: string
+    gender: string,
+    isCaptain?: boolean
 }
