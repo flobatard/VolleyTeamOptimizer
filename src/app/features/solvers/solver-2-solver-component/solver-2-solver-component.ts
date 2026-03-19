@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { DecimalPipe } from '@angular/common';
 import { PlayerDataService } from '../../../core/services/player-data.service';
 import { Player } from '../../../core/models/player';
 import {
@@ -73,7 +74,7 @@ function loadTeams(): EstimatedTeam[] {
 
 @Component({
   selector: 'app-solver-2-solver-component',
-  imports: [FormsModule, ListPairPlayers],
+  imports: [FormsModule, ListPairPlayers, DecimalPipe],
   templateUrl: './solver-2-solver-component.html',
   styleUrl: './solver-2-solver-component.scss',
 })
@@ -87,6 +88,7 @@ export class Solver2SolverComponent {
   readonly progress = signal<number>(0);
   /** true si la dernière génération a trouvé une solution valide, false si fallback */
   readonly lastRunValid = signal<boolean>(true);
+  readonly lastAttemptCount = signal<number | null>(null);
 
   private readonly p = loadParams();
 
@@ -300,6 +302,7 @@ export class Solver2SolverComponent {
         );
         this.teams.set(estimatedTeams);
         this.lastRunValid.set(valid);
+        this.lastAttemptCount.set(data.attemptCount ?? null);
         this.isRunning.set(false);
         worker.terminate();
       }

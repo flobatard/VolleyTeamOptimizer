@@ -64,6 +64,12 @@
     </div>
   }
 
+  @if (lastAttemptCount() !== null && !isRunning()) {
+    <div class="attempt-count">
+      Solution trouvée en {{ lastAttemptCount() | number }} tentative{{ lastAttemptCount()! > 1 ? 's' : '' }}
+    </div>
+  }
+
   @if (workerError()) {
     <div class="error">
       Erreur lors du calcul : {{ workerError() }}
