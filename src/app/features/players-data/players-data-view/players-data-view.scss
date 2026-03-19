@@ -192,6 +192,22 @@
   }
 }
 
+.add-btn {
+  padding: 0.625rem 1.5rem;
+  background: var(--color-success);
+  color: var(--color-white);
+
+  &:hover {
+    background: var(--color-success-hover);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+
 // ── Table ─────────────────────────────────────────────────────────────────────
 
 .players-table {
@@ -318,10 +334,24 @@
     }
   }
 
+  tfoot .add-row {
+    padding: 0.5rem 1rem;
+    border-top: 2px solid var(--color-border-light);
+  }
+
   // ── Responsive card layout ───────────────────────────────────────────────────
 
   @media (max-width: 700px) {
     display: block;
+
+    .add-btn {
+      display: none;
+    }
+
+
+    tfoot {
+      display: none;
+    }
 
     thead {
       display: none;
@@ -438,5 +468,11 @@
 
   &:active {
     transform: scale(0.98);
+  }
+}
+
+@media (max-width: 700px) {
+  .add-btn {
+    display: none;
   }
 }
