@@ -168,7 +168,9 @@ export class Solver2AlgoSolver {
   }
 
   private hasGenderSpreadImbalance(teams: Player[][], numGirls: number): boolean {
-    return numGirls >= teams.length && teams.some((team) => team.filter((p) => p.gender === 'F').length === 0);
+    if (numGirls < teams.length) return false;
+    const counts = teams.map((team) => team.filter((p) => p.gender === 'F').length);
+    return counts.some((c) => c === 0) || Math.max(...counts) - Math.min(...counts) > 1;
   }
 
   private weight(p: Player, coef: number): number {
@@ -252,9 +254,19 @@ export class Solver2AlgoSolver {
           playerToTeam.set(shuffledGirls[i].id, teamIdx);
         }
       } else {
-        for (let t = 0; t < numTeams; t++) {
-          teams[t].push(shuffledGirls[t]);
-          playerToTeam.set(shuffledGirls[t].id, t);
+        // Distribute girls evenly: floor(numGirls/numTeams) per team, extra go to random teams
+        const girlsPerTeam = Math.floor(numGirls / numTeams);
+        const extraTeams = numGirls % numTeams;
+        const teamOrder = this.shuffle([...Array(numTeams).keys()]);
+        let girlIdx = 0;
+        for (let i = 0; i < numTeams; i++) {
+          const t = teamOrder[i];
+          const count = i < extraTeams ? girlsPerTeam + 1 : girlsPerTeam;
+          for (let j = 0; j < count; j++) {
+            teams[t].push(shuffledGirls[girlIdx]);
+            playerToTeam.set(shuffledGirls[girlIdx].id, t);
+            girlIdx++;
+          }
         }
       }
     }
