@@ -338,9 +338,16 @@ export class Solver2AlgoSolver {
     for (const cluster of togetherClusters) {
       const placed = cluster.filter((pid) => playerToTeam.has(pid));
       const unplaced = cluster.filter((pid) => !playerToTeam.has(pid));
-      if (unplaced.length === 0) continue;
+      if (unplaced.length === 0) {
+        // Tous déjà placés — vérifier qu'ils sont dans la même équipe
+        const placedTeams = new Set(placed.map((pid) => playerToTeam.get(pid)));
+        if (placedTeams.size > 1) return { teams, valid: false };
+        continue;
+      }
       let teamIdx: number;
       if (placed.length > 0) {
+        const placedTeams = new Set(placed.map((pid) => playerToTeam.get(pid)));
+        if (placedTeams.size > 1) return { teams, valid: false };
         teamIdx = playerToTeam.get(placed[0])!;
         if (freeSlots(teamIdx) < unplaced.length) return { teams, valid: false };
       } else {
