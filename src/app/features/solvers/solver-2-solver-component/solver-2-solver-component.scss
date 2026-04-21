@@ -411,24 +411,11 @@
     opacity: 0.75;
   }
 
-  &__score {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem 1rem;
-    background: var(--color-bg-subtle);
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     border-top: 1px solid var(--color-border);
-    font-size: 0.8rem;
-  }
-
-  &__score-label {
-    color: var(--color-text-secondary);
-    font-weight: 500;
-  }
-
-  &__score-value {
-    font-weight: 700;
-    color: var(--color-primary);
+    background: var(--color-bg-subtle);
   }
 
   &__players {
@@ -463,4 +450,30 @@
 .player-meta {
   font-size: 0.75rem;
   color: var(--color-text-muted);
+}
+
+.team-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.4rem 0.25rem;
+  gap: 0.1rem;
+
+  &:not(:last-child) {
+    border-right: 1px solid var(--color-border);
+  }
+
+  &__label {
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &__value {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-primary);
+  }
 }

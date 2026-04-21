@@ -257,9 +257,23 @@
               </li>
             }
           </ul>
-          <div class="team-card__score">
-            <span class="team-card__score-label">Score global</span>
-            <span class="team-card__score-value">{{ team.value }}</span>
+          <div class="team-card__stats">
+            <div class="team-stat">
+              <span class="team-stat__label">Global</span>
+              <span class="team-stat__value">{{ team.details.global }}</span>
+            </div>
+            <div class="team-stat">
+              <span class="team-stat__label">Attaque</span>
+              <span class="team-stat__value">{{ team.details.attack }}</span>
+            </div>
+            <div class="team-stat">
+              <span class="team-stat__label">Passe</span>
+              <span class="team-stat__value">{{ team.details.setter }}</span>
+            </div>
+            <div class="team-stat">
+              <span class="team-stat__label">Défense</span>
+              <span class="team-stat__value">{{ team.details.defense }}</span>
+            </div>
           </div>
         </div>
       }
