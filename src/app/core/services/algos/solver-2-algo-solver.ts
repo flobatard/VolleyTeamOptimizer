@@ -4,37 +4,35 @@ import { PlayerTeamSizeConstraint } from '../../models/player-team-size-constrai
 import { computeOptimalNumTeams } from '../team-distribution';
 
 export interface Solver2Params {
-  /** Seuil attaque pour être considéré comme killer (défaut: 7) */
   KILLER_THRESHOLD?: number;
-  /** Seuil passe pour être considéré comme passeur (défaut: 7) */
   PASSER_THRESHOLD?: number;
-  /** Coefficient d'impact des filles pour l'équilibrage (0.1–1). 1 = égal aux garçons, 0.8 = une fille compte 80 % d'un garçon de même niveau. */
+  /** Coefficient d'impact des filles pour l'équilibrage (0.1–1). */
   FEMALE_IMPACT_COEF?: number;
-  /** Nombre de tentatives de randomisation pour trouver une solution valide */
+  /** Nombre de tentatives de restart si le delta n'est pas atteint */
   MAX_ATTEMPTS?: number;
-  /** Forcer un nombre pair d'équipes */
   FORCE_EVEN_TEAMS?: boolean;
-  /** Écart max autorisé entre les moyennes de score global des équipes (défaut: 1). 0 = optimisation maximale. */
+  /** Écart max autorisé entre les moyennes de score global des équipes. 0 = pas de contrainte. */
   MAX_GLOBAL_DELTA?: number;
-  /** Nombre d'équipes à générer (override du calcul automatique) */
   NUM_TEAMS?: number;
-  /** Paires de joueurs qui doivent jouer ensemble */
   TOGETHER_PAIRS?: PlayerPair[];
-  /** Paires de joueurs qui ne doivent pas jouer ensemble */
   APART_PAIRS?: PlayerPair[];
-  /** Contraintes de taille d'équipe par joueur (exclure certaines tailles) */
   PLAYER_TEAM_SIZE_CONSTRAINTS?: PlayerTeamSizeConstraint[];
 }
 
 /**
- * Algorithme par génération aléatoire : mélange les joueurs et répartit en équipes.
- * Si les conditions ne sont pas respectées (filles, paires, taille, delta), on régénère.
- * Killer et passeur ne sont pas obligatoires par équipe : attaque et passe sont équilibrées via le delta.
+ * Algorithme construction + recherche locale par échanges de clusters :
+ * 1. Construction : place les joueurs en respectant les contraintes dures
+ *    (paires ensemble/séparés, répartition de genre, capitaines, taille d'équipe).
+ * 2. Recherche locale : échange des clusters (groupes de joueurs liés par "ensemble")
+ *    entre équipes pour minimiser l'écart de niveau (maxGap) tout en maintenant
+ *    toutes les contraintes dures.
+ * 3. Restart : si le delta cible n'est pas atteint, relance depuis une nouvelle
+ *    construction aléatoire (jusqu'à MAX_RESTARTS fois).
  */
 export class Solver2AlgoSolver {
-  private static readonly DEFAULT_KILLER_THRESHOLD = 7;
-  private static readonly DEFAULT_PASSER_THRESHOLD = 7;
-  private static readonly DEFAULT_MAX_ATTEMPTS = 10000;
+  private static readonly DEFAULT_MAX_RESTARTS = 100;
+  private static readonly LOCAL_SEARCH_ITER = 3000;
+  private static readonly LOCAL_SEARCH_MAX_NO_IMPROVEMENT = 1000;
   private static readonly DEFAULT_MAX_GLOBAL_DELTA = 2;
   private static readonly DEFAULT_FEMALE_IMPACT_COEF = 1;
 
@@ -44,10 +42,13 @@ export class Solver2AlgoSolver {
     params: Solver2Params = {},
     onProgress?: (percent: number) => void
   ): { teams: Player[][]; attemptCount: number; valid: boolean } {
-    const maxAttempts = params.MAX_ATTEMPTS ?? Solver2AlgoSolver.DEFAULT_MAX_ATTEMPTS;
+    const maxRestarts = params.MAX_ATTEMPTS ?? Solver2AlgoSolver.DEFAULT_MAX_RESTARTS;
     const forceEvenTeams = params.FORCE_EVEN_TEAMS ?? false;
     const maxGlobalDelta = params.MAX_GLOBAL_DELTA ?? Solver2AlgoSolver.DEFAULT_MAX_GLOBAL_DELTA;
-    const femaleImpactCoef = Math.max(0.1, Math.min(1, params.FEMALE_IMPACT_COEF ?? Solver2AlgoSolver.DEFAULT_FEMALE_IMPACT_COEF));
+    const femaleImpactCoef = Math.max(
+      0.1,
+      Math.min(1, params.FEMALE_IMPACT_COEF ?? Solver2AlgoSolver.DEFAULT_FEMALE_IMPACT_COEF)
+    );
 
     const numTeams = params.NUM_TEAMS ?? computeOptimalNumTeams(players.length, targetTeamSize, forceEvenTeams);
     const numGirls = players.filter((p) => p.gender === 'F').length;
@@ -63,210 +64,296 @@ export class Solver2AlgoSolver {
       players.some((x) => x.id === c.playerId)
     );
 
-    // Pré-calculer les clusters de filles liées par "ensemble" (constant entre les tentatives)
+    // Pré-calculer les clusters de filles liées "ensemble" (constant entre les restarts)
     const playerMap = new Map(players.map((p) => [p.id, p]));
     const girlTogetherPairs = togetherPairs.filter(
       (pair) => playerMap.get(pair.player1Id)?.gender === 'F' && playerMap.get(pair.player2Id)?.gender === 'F'
     );
     const girlClusters = this.buildTogetherClusters(girlTogetherPairs, playerMap);
-    // Taille max d'un cluster de filles (1 si aucun cluster)
     const maxGirlClusterSize = girlClusters.reduce((max, c) => Math.max(max, c.length), 1);
 
-    let bestTeams: Player[][] | null = null;
-    let bestInvalidCount = numTeams + 1;
+    // Apart pairs : set pour lookup O(1)
+    const apartSet = new Set<string>(
+      apartPairs.map((p) => `${Math.min(p.player1Id, p.player2Id)}-${Math.max(p.player1Id, p.player2Id)}`)
+    );
+    const haveApartPair = (a: number, b: number): boolean =>
+      apartSet.has(`${Math.min(a, b)}-${Math.max(a, b)}`);
 
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      if (onProgress && attempt % 10 === 0) {
-        onProgress(Math.min(99, Math.round((attempt / maxAttempts) * 100)));
+    let bestTeams: Player[][] | null = null;
+    let bestGap = Infinity;
+
+    for (let attempt = 0; attempt < maxRestarts; attempt++) {
+      if (onProgress && attempt % 5 === 0) {
+        onProgress(Math.min(99, Math.round((attempt / maxRestarts) * 100)));
       }
 
-      const teams = this.generateAndValidate(
+      // Phase 1 : construction d'une solution valide
+      const buildResult = this.buildTeamsWithGenderAndPairs(
         players,
         numTeams,
         numGirls,
         numCaptains,
-        maxGlobalDelta,
+        togetherPairs,
+        apartPairs,
+        girlClusters
+      );
+      if (!buildResult.valid) continue;
+      const builtTeams = buildResult.teams;
+
+      if (!this.isGenderValid(builtTeams, numGirls, numTeams, maxGirlClusterSize)) continue;
+      if (numCaptains > 0 && !this.isCaptainValid(builtTeams, numCaptains, numTeams)) continue;
+      if (!this.isTeamSizeValid(builtTeams, playerTeamSizeConstraints)) continue;
+
+      // Phase 2 : recherche locale par échanges de clusters
+      const optimized = this.localSearch(
+        builtTeams,
+        togetherPairs,
         femaleImpactCoef,
-        { togetherPairs, apartPairs, playerTeamSizeConstraints },
-        girlClusters,
-        maxGirlClusterSize
+        numGirls,
+        numCaptains,
+        numTeams,
+        maxGirlClusterSize,
+        haveApartPair
       );
 
-      if (teams.valid) {
-        if (onProgress) onProgress(100);
-        return { teams: teams.teams, attemptCount: attempt + 1, valid: true };
+      const gap = maxGlobalDelta > 0 ? this.maxGap(this.computeTeamStats(optimized, femaleImpactCoef)) : 0;
+
+      if (gap < bestGap) {
+        bestGap = gap;
+        bestTeams = optimized;
       }
 
-      if (teams.invalidCount < bestInvalidCount) {
-        bestInvalidCount = teams.invalidCount;
-        bestTeams = teams.teams;
+      if (maxGlobalDelta === 0 || gap <= maxGlobalDelta) {
+        if (onProgress) onProgress(100);
+        return { teams: optimized, attemptCount: attempt + 1, valid: true };
       }
     }
 
     if (onProgress) onProgress(100);
     const fallbackTeams = bestTeams ?? this.chunkIntoTeams(this.shuffle([...players]), numTeams);
-    return { teams: fallbackTeams, attemptCount: maxAttempts, valid: false };
+    return { teams: fallbackTeams, attemptCount: maxRestarts, valid: false };
   }
 
+  // ─── Recherche locale ────────────────────────────────────────────────────────
+
   /**
-   * Génère une répartition : place d'abord les filles selon les règles, puis les garçons aléatoirement.
-   * Vérifie ensuite les autres conditions (paires, taille, delta).
+   * Échange des clusters entre équipes pour minimiser maxGap.
+   * Un cluster est un groupe de joueurs liés par des paires "ensemble" (ou un joueur isolé).
+   * Chaque échange est validé (contraintes apart, genre, capitaine) avant d'être accepté.
+   * Seuls les échanges améliorants sont retenus (descente de gradient).
    */
-  private generateAndValidate(
-    players: Player[],
-    numTeams: number,
+  private localSearch(
+    teams: Player[][],
+    togetherPairs: PlayerPair[],
+    femaleImpactCoef: number,
     numGirls: number,
     numCaptains: number,
-    maxGlobalDelta: number,
-    femaleImpactCoef: number,
-    constraintParams: {
-      togetherPairs: PlayerPair[];
-      apartPairs: PlayerPair[];
-      playerTeamSizeConstraints: PlayerTeamSizeConstraint[];
-    },
-    girlClusters: number[][],
-    maxGirlClusterSize: number
-  ): { teams: Player[][]; valid: boolean; invalidCount: number } {
-    const buildResult = this.buildTeamsWithGenderAndPairs(
-      players,
-      numTeams,
-      numGirls,
-      numCaptains,
-      constraintParams.togetherPairs,
-      constraintParams.apartPairs,
-      girlClusters
-    );
-    if (!buildResult.valid) {
-      return { teams: buildResult.teams, valid: false, invalidCount: 1 };
-    }
-    const teams = buildResult.teams;
+    numTeams: number,
+    maxGirlClusterSize: number,
+    haveApartPair: (a: number, b: number) => boolean
+  ): Player[][] {
+    if (numTeams < 2) return teams;
 
-    if (!this.isGenderValid(teams, numGirls, numTeams, maxGirlClusterSize)) {
-      return { teams, valid: false, invalidCount: 1 };
-    }
+    const clustersByTeam = this.buildClustersByTeam(teams, togetherPairs);
+    const girlCounts = teams.map((t) => t.filter((p) => p.gender === 'F').length);
+    const captainCounts = numCaptains > 0 ? teams.map((t) => t.filter((p) => p.isCaptain).length) : null;
 
-    if (numCaptains > 0) {
-      const captainOk =
-        numCaptains < numTeams
-          ? !this.hasCaptainImbalance(teams)
-          : !this.hasCaptainSpreadImbalance(teams, numCaptains);
-      if (!captainOk) {
-        return { teams, valid: false, invalidCount: 1 };
+    let currentStats = this.computeTeamStats(teams, femaleImpactCoef);
+    let currentScore = this.maxGap(currentStats);
+
+    const MAX_ITER = Solver2AlgoSolver.LOCAL_SEARCH_ITER;
+    const MAX_NO_IMPROVEMENT = Solver2AlgoSolver.LOCAL_SEARCH_MAX_NO_IMPROVEMENT;
+    let noImprovementCount = 0;
+
+    for (let iter = 0; iter < MAX_ITER && noImprovementCount < MAX_NO_IMPROVEMENT; iter++) {
+      // Tirer deux équipes distinctes au hasard
+      const t1 = Math.floor(Math.random() * numTeams);
+      let t2 = Math.floor(Math.random() * (numTeams - 1));
+      if (t2 >= t1) t2++;
+
+      const clusters1 = clustersByTeam[t1];
+      const clusters2 = clustersByTeam[t2];
+      if (clusters1.length === 0 || clusters2.length === 0) {
+        noImprovementCount++;
+        continue;
+      }
+
+      // Tirer un cluster de t1, puis un de même taille dans t2
+      const c1 = clusters1[Math.floor(Math.random() * clusters1.length)];
+      const c2Candidates = clusters2.filter((c) => c.length === c1.length && c !== c1);
+      if (c2Candidates.length === 0) {
+        noImprovementCount++;
+        continue;
+      }
+      const c2 = c2Candidates[Math.floor(Math.random() * c2Candidates.length)];
+
+      if (
+        !this.isSwapValid(
+          c1, c2, t1, t2, teams,
+          girlCounts, captainCounts,
+          numGirls, numTeams, numCaptains, maxGirlClusterSize,
+          haveApartPair
+        )
+      ) {
+        noImprovementCount++;
+        continue;
+      }
+
+      // Appliquer l'échange et évaluer
+      this.applySwap(teams, clustersByTeam, girlCounts, captainCounts, t1, t2, c1, c2);
+      const newStats = this.computeTeamStatsForTeams(teams, femaleImpactCoef, currentStats, t1, t2);
+      const newScore = this.maxGap(newStats);
+
+      if (newScore < currentScore - 1e-9) {
+        currentStats = newStats;
+        currentScore = newScore;
+        noImprovementCount = 0;
+      } else {
+        // Annuler l'échange
+        this.applySwap(teams, clustersByTeam, girlCounts, captainCounts, t1, t2, c2, c1);
+        noImprovementCount++;
       }
     }
 
-    const teamSizeOk = !this.hasTeamSizeConstraintViolations(teams, constraintParams);
-    if (!teamSizeOk) {
-      return { teams, valid: false, invalidCount: 1 };
-    }
-
-    if (maxGlobalDelta > 0) {
-      const stats = this.computeTeamStats(teams, femaleImpactCoef);
-      const deltaOk = this.maxGap(stats) <= maxGlobalDelta;
-      if (!deltaOk) {
-        return { teams, valid: false, invalidCount: 1 };
-      }
-    }
-
-    return { teams, valid: true, invalidCount: 0 };
-  }
-
-  private hasTeamSizeConstraintViolations(
-    teams: Player[][],
-    params: { playerTeamSizeConstraints: PlayerTeamSizeConstraint[] }
-  ): boolean {
-    for (const constraint of params.playerTeamSizeConstraints) {
-      for (let i = 0; i < teams.length; i++) {
-        const team = teams[i];
-        if (!constraint.excludedSizes.includes(team.length)) continue;
-        if (team.some((p) => p.id === constraint.playerId)) return true;
-      }
-    }
-    return false;
+    return teams;
   }
 
   /**
-   * Valide la répartition des filles entre les équipes.
-   *
-   * Règles :
-   * - Le maximum de filles dans une équipe ne dépasse pas max(ceil(numGirls/numTeams), maxGirlClusterSize).
-   * - Quand numGirls >= numTeams ET qu'il n'y a pas de cluster de filles, chaque équipe doit avoir ≥ 1 fille.
-   *   (Si un cluster existe, une équipe peut se retrouver sans fille — contrainte inévitable.)
+   * Vérifie si l'échange de c1 (équipe t1) ↔ c2 (équipe t2) est valide :
+   * paires séparées, répartition de genre, répartition de capitaines.
    */
-  private isGenderValid(
+  private isSwapValid(
+    c1: Player[], c2: Player[],
+    t1: number, t2: number,
     teams: Player[][],
-    numGirls: number,
-    numTeams: number,
-    maxGirlClusterSize: number
+    girlCounts: number[], captainCounts: number[] | null,
+    numGirls: number, numTeams: number, numCaptains: number,
+    maxGirlClusterSize: number,
+    haveApartPair: (a: number, b: number) => boolean
   ): boolean {
-    if (numGirls === 0) return true;
-    const counts = teams.map((t) => t.filter((p) => p.gender === 'F').length);
-    const maxCount = Math.max(...counts);
-    const minCount = Math.min(...counts);
-    const idealMax = Math.max(Math.ceil(numGirls / numTeams), maxGirlClusterSize);
-    if (maxCount > idealMax) return false;
-    // Sans cluster de filles, chaque équipe doit avoir au moins 1 fille quand numGirls >= numTeams
-    if (numGirls >= numTeams && maxGirlClusterSize <= 1 && minCount === 0) return false;
+    const c2Ids = new Set(c2.map((p) => p.id));
+    for (const p1 of c1) {
+      for (const p2 of teams[t2]) {
+        if (!c2Ids.has(p2.id) && haveApartPair(p1.id, p2.id)) return false;
+      }
+    }
+    const c1Ids = new Set(c1.map((p) => p.id));
+    for (const p2 of c2) {
+      for (const p1 of teams[t1]) {
+        if (!c1Ids.has(p1.id) && haveApartPair(p1.id, p2.id)) return false;
+      }
+    }
+
+    const c1Girls = c1.filter((p) => p.gender === 'F').length;
+    const c2Girls = c2.filter((p) => p.gender === 'F').length;
+    if (c1Girls !== c2Girls) {
+      const newCounts = [...girlCounts];
+      newCounts[t1] = girlCounts[t1] - c1Girls + c2Girls;
+      newCounts[t2] = girlCounts[t2] - c2Girls + c1Girls;
+      const idealMax = Math.max(Math.ceil(numGirls / numTeams), maxGirlClusterSize);
+      if (Math.max(...newCounts) > idealMax) return false;
+      if (numGirls >= numTeams && maxGirlClusterSize <= 1 && Math.min(...newCounts) === 0) return false;
+    }
+
+    if (captainCounts) {
+      const c1Caps = c1.filter((p) => p.isCaptain).length;
+      const c2Caps = c2.filter((p) => p.isCaptain).length;
+      if (c1Caps !== c2Caps) {
+        const newCounts = [...captainCounts];
+        newCounts[t1] = captainCounts[t1] - c1Caps + c2Caps;
+        newCounts[t2] = captainCounts[t2] - c2Caps + c1Caps;
+        if (numCaptains < numTeams) {
+          if (newCounts[t1] > 1 || newCounts[t2] > 1) return false;
+        } else {
+          const mx = Math.max(...newCounts);
+          const mn = Math.min(...newCounts);
+          if (mn === 0 || mx - mn > 1) return false;
+        }
+      }
+    }
+
     return true;
   }
 
-  private hasCaptainImbalance(teams: Player[][]): boolean {
-    return teams.some((team) => team.filter((p) => p.isCaptain).length > 1);
-  }
-
-  private hasCaptainSpreadImbalance(teams: Player[][], numCaptains: number): boolean {
-    if (numCaptains < teams.length) return false;
-    const counts = teams.map((team) => team.filter((p) => p.isCaptain).length);
-    return counts.some((c) => c === 0) || Math.max(...counts) - Math.min(...counts) > 1;
-  }
-
-  private weight(p: Player, coef: number): number {
-    return p.gender === 'F' ? coef : 1;
-  }
-
-  private computeTeamStats(
+  /** Applique l'échange de c1 (t1) ↔ c2 (t2) sur les structures de données. */
+  private applySwap(
     teams: Player[][],
-    femaleImpactCoef: number
-  ): { global: number[]; defense: number[]; attack: number[]; set: number[] } {
-    return {
-      global: teams.map((t) =>
-        t.reduce((s, p) => s + p.global_impact * this.weight(p, femaleImpactCoef), 0) / t.length
-      ),
-      defense: teams.map((t) =>
-        t.reduce((s, p) => s + p.defense * this.weight(p, femaleImpactCoef), 0) / t.length
-      ),
-      attack: teams.map((t) =>
-        t.reduce((s, p) => s + p.attack * this.weight(p, femaleImpactCoef), 0) / t.length
-      ),
-      set: teams.map((t) =>
-        t.reduce((s, p) => s + p.set * this.weight(p, femaleImpactCoef), 0) / t.length
-      ),
-    };
-  }
+    clustersByTeam: Player[][][],
+    girlCounts: number[],
+    captainCounts: number[] | null,
+    t1: number, t2: number,
+    c1: Player[], c2: Player[]
+  ): void {
+    const c1Ids = new Set(c1.map((p) => p.id));
+    const c2Ids = new Set(c2.map((p) => p.id));
 
-  private maxGap(stats: {
-    global: number[];
-    defense: number[];
-    attack: number[];
-    set: number[];
-  }): number {
-    const gap = (arr: number[]) => Math.max(...arr) - Math.min(...arr);
-    return Math.max(
-      gap(stats.global),
-      gap(stats.defense),
-      gap(stats.attack),
-      gap(stats.set)
-    );
+    teams[t1] = [...teams[t1].filter((p) => !c1Ids.has(p.id)), ...c2];
+    teams[t2] = [...teams[t2].filter((p) => !c2Ids.has(p.id)), ...c1];
+
+    const idx1 = clustersByTeam[t1].indexOf(c1);
+    clustersByTeam[t1][idx1] = c2;
+    const idx2 = clustersByTeam[t2].indexOf(c2);
+    clustersByTeam[t2][idx2] = c1;
+
+    const c1Girls = c1.filter((p) => p.gender === 'F').length;
+    const c2Girls = c2.filter((p) => p.gender === 'F').length;
+    girlCounts[t1] += c2Girls - c1Girls;
+    girlCounts[t2] += c1Girls - c2Girls;
+
+    if (captainCounts) {
+      const c1Caps = c1.filter((p) => p.isCaptain).length;
+      const c2Caps = c2.filter((p) => p.isCaptain).length;
+      captainCounts[t1] += c2Caps - c1Caps;
+      captainCounts[t2] += c1Caps - c2Caps;
+    }
   }
 
   /**
-   * Construit les équipes en plaçant dans l'ordre :
-   * 1a. Clusters de filles liées "ensemble" (placées ensemble en priorité sur la répartition de genre)
-   * 1b. Filles isolées, réparties greedily (équipe avec le moins de filles en premier)
-   * 2.  Capitaines non encore placés
-   * 3.  Clusters "ensemble" (fermeture transitive)
-   * 4.  Paires "séparés"
-   * 5.  Joueurs restants
+   * Construit la liste des clusters par équipe.
+   * Un cluster = groupe de joueurs liés par des paires "ensemble" (union-find),
+   * ou un joueur isolé (cluster singleton).
+   */
+  private buildClustersByTeam(teams: Player[][], togetherPairs: PlayerPair[]): Player[][][] {
+    const allPlayers = teams.flat();
+    const parent = new Map<number, number>(allPlayers.map((p) => [p.id, p.id]));
+
+    const find = (id: number): number => {
+      if (parent.get(id) !== id) parent.set(id, find(parent.get(id)!));
+      return parent.get(id)!;
+    };
+    const union = (a: number, b: number) => {
+      const ra = find(a);
+      const rb = find(b);
+      if (ra !== rb) parent.set(ra, rb);
+    };
+
+    for (const pair of togetherPairs) {
+      if (parent.has(pair.player1Id) && parent.has(pair.player2Id)) {
+        union(pair.player1Id, pair.player2Id);
+      }
+    }
+
+    return teams.map((team) => {
+      const groups = new Map<number, Player[]>();
+      for (const p of team) {
+        const root = find(p.id);
+        if (!groups.has(root)) groups.set(root, []);
+        groups.get(root)!.push(p);
+      }
+      return [...groups.values()];
+    });
+  }
+
+  // ─── Construction initiale ───────────────────────────────────────────────────
+
+  /**
+   * Construit une répartition en respectant les contraintes dures :
+   * 1a. Clusters de filles liées "ensemble" → placés dans la même équipe.
+   * 1b. Filles isolées → réparties greedily (équipe avec le moins de filles en premier).
+   * 2.  Capitaines non encore placés.
+   * 3.  Clusters "ensemble" complets (fermeture transitive).
+   * 4.  Paires "séparés".
+   * 5.  Joueurs restants (aléatoire).
    */
   private buildTeamsWithGenderAndPairs(
     players: Player[],
@@ -289,10 +376,9 @@ export class Solver2AlgoSolver {
 
     const teams: Player[][] = teamSizes.map(() => []);
     const playerToTeam = new Map<number, number>();
-
     const freeSlots = (t: number) => teamSizes[t] - teams[t].length;
 
-    // 1a. Placer les clusters de filles ensemble (priorité sur la répartition de genre)
+    // 1a. Clusters de filles ensemble (priorité sur la répartition de genre)
     for (const cluster of girlClusters) {
       const clusterPlayers = cluster.map((id) => playerMap.get(id)!).filter(Boolean);
       const candidates = [...Array(numTeams).keys()].filter((t) => freeSlots(t) >= clusterPlayers.length);
@@ -304,23 +390,19 @@ export class Solver2AlgoSolver {
       }
     }
 
-    // 1b. Répartir les filles isolées (non dans un cluster) de façon équilibrée.
-    // Algorithme glouton : chaque fille va dans l'équipe avec le moins de filles actuellement.
+    // 1b. Filles isolées : greedy vers l'équipe avec le moins de filles
     if (numGirls > 0) {
       const clusteredGirlIds = new Set(girlClusters.flat());
-      const girls = players.filter((p) => p.gender === 'F');
-      const singleGirls = this.shuffle(girls.filter((g) => !clusteredGirlIds.has(g.id)));
-
+      const singleGirls = this.shuffle(players.filter((p) => p.gender === 'F' && !clusteredGirlIds.has(p.id)));
       for (const girl of singleGirls) {
-        let minGirlCount = Infinity;
+        let minCount = Infinity;
         let bestTeam = -1;
-        // Parcours dans un ordre aléatoire pour briser les égalités différemment à chaque tentative
         const order = this.shuffle([...Array(numTeams).keys()]);
         for (const t of order) {
           if (freeSlots(t) <= 0) continue;
           const gc = teams[t].filter((p) => p.gender === 'F').length;
-          if (gc < minGirlCount) {
-            minGirlCount = gc;
+          if (gc < minCount) {
+            minCount = gc;
             bestTeam = t;
           }
         }
@@ -330,7 +412,7 @@ export class Solver2AlgoSolver {
       }
     }
 
-    // 2. Placer les capitaines non encore placés (une fille peut être capitaine et déjà placée)
+    // 2. Capitaines non encore placés
     if (numCaptains > 0) {
       const unplacedCaptains = this.shuffle(players.filter((p) => p.isCaptain && !playerToTeam.has(p.id)));
       if (unplacedCaptains.length > 0) {
@@ -341,9 +423,8 @@ export class Solver2AlgoSolver {
               ? this.shuffle([...Array(numTeams).keys()]).slice(0, nc)
               : this.shuffle([...Array(numTeams).keys()]);
           for (let i = 0; i < nc; i++) {
-            const t = teamIndices[i];
-            teams[t].push(unplacedCaptains[i]);
-            playerToTeam.set(unplacedCaptains[i].id, t);
+            teams[teamIndices[i]].push(unplacedCaptains[i]);
+            playerToTeam.set(unplacedCaptains[i].id, teamIndices[i]);
           }
         } else {
           const capPerTeam = Math.floor(nc / numTeams);
@@ -363,15 +444,12 @@ export class Solver2AlgoSolver {
       }
     }
 
-    // 3. Construire les clusters "ensemble" (fermeture transitive)
+    // 3. Clusters "ensemble" complets
     const togetherClusters = this.buildTogetherClusters(togetherPairs, playerMap);
-
-    // 4. Placer les clusters ensemble (en évitant les équipes interdites par les paires "séparés")
     for (const cluster of togetherClusters) {
       const placed = cluster.filter((pid) => playerToTeam.has(pid));
       const unplaced = cluster.filter((pid) => !playerToTeam.has(pid));
       if (unplaced.length === 0) {
-        // Tous déjà placés — vérifier qu'ils sont dans la même équipe
         const placedTeams = new Set(placed.map((pid) => playerToTeam.get(pid)));
         if (placedTeams.size > 1) return { teams, valid: false };
         continue;
@@ -386,18 +464,19 @@ export class Solver2AlgoSolver {
         const forbiddenTeams = new Set<number>();
         for (const pid of cluster) {
           for (const pair of apartPairs) {
-            const other = pair.player1Id === pid ? pair.player2Id : pair.player2Id === pid ? pair.player1Id : null;
+            const other =
+              pair.player1Id === pid ? pair.player2Id : pair.player2Id === pid ? pair.player1Id : null;
             if (other !== null && playerMap.has(other)) {
               const otherTeam = playerToTeam.get(other);
               if (otherTeam !== undefined) forbiddenTeams.add(otherTeam);
             }
           }
         }
-        const teamCandidates = [...Array(numTeams).keys()].filter(
+        const candidates = [...Array(numTeams).keys()].filter(
           (t) => freeSlots(t) >= cluster.length && !forbiddenTeams.has(t)
         );
-        if (teamCandidates.length === 0) return { teams, valid: false };
-        teamIdx = teamCandidates[Math.floor(Math.random() * teamCandidates.length)];
+        if (candidates.length === 0) return { teams, valid: false };
+        teamIdx = candidates[Math.floor(Math.random() * candidates.length)];
       }
       for (const pid of unplaced) {
         const p = playerMap.get(pid);
@@ -408,7 +487,7 @@ export class Solver2AlgoSolver {
       }
     }
 
-    // 5. Placer les paires "séparés"
+    // 4. Paires "séparés"
     for (const pair of apartPairs) {
       const p1 = playerMap.get(pair.player1Id);
       const p2 = playerMap.get(pair.player2Id);
@@ -420,17 +499,17 @@ export class Solver2AlgoSolver {
         continue;
       }
       if (t1 !== undefined) {
-        const otherTeams = [...Array(numTeams).keys()].filter((t) => t !== t1 && freeSlots(t) > 0);
-        if (otherTeams.length === 0) return { teams, valid: false };
-        const teamIdx = otherTeams[Math.floor(Math.random() * otherTeams.length)];
-        teams[teamIdx].push(p2);
-        playerToTeam.set(pair.player2Id, teamIdx);
+        const others = [...Array(numTeams).keys()].filter((t) => t !== t1 && freeSlots(t) > 0);
+        if (others.length === 0) return { teams, valid: false };
+        const idx = others[Math.floor(Math.random() * others.length)];
+        teams[idx].push(p2);
+        playerToTeam.set(pair.player2Id, idx);
       } else if (t2 !== undefined) {
-        const otherTeams = [...Array(numTeams).keys()].filter((t) => t !== t2 && freeSlots(t) > 0);
-        if (otherTeams.length === 0) return { teams, valid: false };
-        const teamIdx = otherTeams[Math.floor(Math.random() * otherTeams.length)];
-        teams[teamIdx].push(p1);
-        playerToTeam.set(pair.player1Id, teamIdx);
+        const others = [...Array(numTeams).keys()].filter((t) => t !== t2 && freeSlots(t) > 0);
+        if (others.length === 0) return { teams, valid: false };
+        const idx = others[Math.floor(Math.random() * others.length)];
+        teams[idx].push(p1);
+        playerToTeam.set(pair.player1Id, idx);
       } else {
         const available = [...Array(numTeams).keys()].filter((t) => freeSlots(t) >= 1);
         if (available.length < 2) return { teams, valid: false };
@@ -442,7 +521,7 @@ export class Solver2AlgoSolver {
       }
     }
 
-    // 6. Remplir les slots restants
+    // 5. Joueurs restants
     const remaining = this.shuffle(players.filter((p) => !playerToTeam.has(p.id)));
     let idx = 0;
     for (let t = 0; t < numTeams; t++) {
@@ -454,11 +533,95 @@ export class Solver2AlgoSolver {
     return { teams, valid: true };
   }
 
-  /** Union-Find pour regrouper les joueurs qui doivent être ensemble. */
-  private buildTogetherClusters(
-    togetherPairs: PlayerPair[],
-    playerMap: Map<number, Player>
-  ): number[][] {
+  // ─── Validation des contraintes dures ───────────────────────────────────────
+
+  /**
+   * Valide la répartition des filles.
+   * - Aucune équipe ne dépasse max(ceil(numGirls/numTeams), maxGirlClusterSize) filles.
+   * - Sans cluster de filles, toute équipe doit avoir ≥ 1 fille quand numGirls >= numTeams.
+   */
+  private isGenderValid(
+    teams: Player[][],
+    numGirls: number,
+    numTeams: number,
+    maxGirlClusterSize: number
+  ): boolean {
+    if (numGirls === 0) return true;
+    const counts = teams.map((t) => t.filter((p) => p.gender === 'F').length);
+    const idealMax = Math.max(Math.ceil(numGirls / numTeams), maxGirlClusterSize);
+    if (Math.max(...counts) > idealMax) return false;
+    if (numGirls >= numTeams && maxGirlClusterSize <= 1 && Math.min(...counts) === 0) return false;
+    return true;
+  }
+
+  private isCaptainValid(teams: Player[][], numCaptains: number, numTeams: number): boolean {
+    if (numCaptains < numTeams) {
+      return !teams.some((t) => t.filter((p) => p.isCaptain).length > 1);
+    }
+    const counts = teams.map((t) => t.filter((p) => p.isCaptain).length);
+    return Math.min(...counts) >= 1 && Math.max(...counts) - Math.min(...counts) <= 1;
+  }
+
+  private isTeamSizeValid(teams: Player[][], constraints: PlayerTeamSizeConstraint[]): boolean {
+    for (const c of constraints) {
+      for (const team of teams) {
+        if (c.excludedSizes.includes(team.length) && team.some((p) => p.id === c.playerId)) return false;
+      }
+    }
+    return true;
+  }
+
+  // ─── Calcul des scores ───────────────────────────────────────────────────────
+
+  private weight(p: Player, coef: number): number {
+    return p.gender === 'F' ? coef : 1;
+  }
+
+  private computeTeamStats(
+    teams: Player[][],
+    femaleImpactCoef: number
+  ): { global: number[]; defense: number[]; attack: number[]; set: number[] } {
+    return {
+      global: teams.map((t) => t.reduce((s, p) => s + p.global_impact * this.weight(p, femaleImpactCoef), 0) / t.length),
+      defense: teams.map((t) => t.reduce((s, p) => s + p.defense * this.weight(p, femaleImpactCoef), 0) / t.length),
+      attack: teams.map((t) => t.reduce((s, p) => s + p.attack * this.weight(p, femaleImpactCoef), 0) / t.length),
+      set: teams.map((t) => t.reduce((s, p) => s + p.set * this.weight(p, femaleImpactCoef), 0) / t.length),
+    };
+  }
+
+  /** Recalcule les stats uniquement pour les deux équipes modifiées (optimisation). */
+  private computeTeamStatsForTeams(
+    teams: Player[][],
+    femaleImpactCoef: number,
+    prev: { global: number[]; defense: number[]; attack: number[]; set: number[] },
+    t1: number, t2: number
+  ): { global: number[]; defense: number[]; attack: number[]; set: number[] } {
+    const stats = {
+      global: [...prev.global],
+      defense: [...prev.defense],
+      attack: [...prev.attack],
+      set: [...prev.set],
+    };
+    for (const t of [t1, t2]) {
+      const team = teams[t];
+      const len = team.length;
+      stats.global[t] = team.reduce((s, p) => s + p.global_impact * this.weight(p, femaleImpactCoef), 0) / len;
+      stats.defense[t] = team.reduce((s, p) => s + p.defense * this.weight(p, femaleImpactCoef), 0) / len;
+      stats.attack[t] = team.reduce((s, p) => s + p.attack * this.weight(p, femaleImpactCoef), 0) / len;
+      stats.set[t] = team.reduce((s, p) => s + p.set * this.weight(p, femaleImpactCoef), 0) / len;
+    }
+    return stats;
+  }
+
+  private maxGap(stats: { global: number[]; defense: number[]; attack: number[]; set: number[] }): number {
+    const gap = (arr: number[]) => Math.max(...arr) - Math.min(...arr);
+    return Math.max(gap(stats.global), gap(stats.defense), gap(stats.attack), gap(stats.set));
+  }
+
+  // ─── Utilitaires ─────────────────────────────────────────────────────────────
+
+  /** Union-Find : regroupe les joueurs qui doivent être ensemble (fermeture transitive). */
+  private buildTogetherClusters(togetherPairs: PlayerPair[], playerMap: Map<number, Player>): number[][] {
     const parent = new Map<number, number>();
     const find = (id: number): number => {
       if (!parent.has(id)) parent.set(id, id);
@@ -475,13 +638,13 @@ export class Solver2AlgoSolver {
         union(pair.player1Id, pair.player2Id);
       }
     }
-    const clustersByRoot = new Map<number, number[]>();
+    const byRoot = new Map<number, number[]>();
     for (const [id] of parent) {
       const root = find(id);
-      if (!clustersByRoot.has(root)) clustersByRoot.set(root, []);
-      clustersByRoot.get(root)!.push(id);
+      if (!byRoot.has(root)) byRoot.set(root, []);
+      byRoot.get(root)!.push(id);
     }
-    return [...clustersByRoot.values()].filter((c) => c.length >= 2);
+    return [...byRoot.values()].filter((c) => c.length >= 2);
   }
 
   private chunkIntoTeams(players: Player[], numTeams: number): Player[][] {
