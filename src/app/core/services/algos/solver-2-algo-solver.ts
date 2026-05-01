@@ -63,6 +63,15 @@ export class Solver2AlgoSolver {
       players.some((x) => x.id === c.playerId)
     );
 
+    // Pré-calculer les clusters de filles liées par "ensemble" (constant entre les tentatives)
+    const playerMap = new Map(players.map((p) => [p.id, p]));
+    const girlTogetherPairs = togetherPairs.filter(
+      (pair) => playerMap.get(pair.player1Id)?.gender === 'F' && playerMap.get(pair.player2Id)?.gender === 'F'
+    );
+    const girlClusters = this.buildTogetherClusters(girlTogetherPairs, playerMap);
+    // Taille max d'un cluster de filles (1 si aucun cluster)
+    const maxGirlClusterSize = girlClusters.reduce((max, c) => Math.max(max, c.length), 1);
+
     let bestTeams: Player[][] | null = null;
     let bestInvalidCount = numTeams + 1;
 
@@ -78,7 +87,9 @@ export class Solver2AlgoSolver {
         numCaptains,
         maxGlobalDelta,
         femaleImpactCoef,
-        { togetherPairs, apartPairs, playerTeamSizeConstraints }
+        { togetherPairs, apartPairs, playerTeamSizeConstraints },
+        girlClusters,
+        maxGirlClusterSize
       );
 
       if (teams.valid) {
@@ -112,7 +123,9 @@ export class Solver2AlgoSolver {
       togetherPairs: PlayerPair[];
       apartPairs: PlayerPair[];
       playerTeamSizeConstraints: PlayerTeamSizeConstraint[];
-    }
+    },
+    girlClusters: number[][],
+    maxGirlClusterSize: number
   ): { teams: Player[][]; valid: boolean; invalidCount: number } {
     const buildResult = this.buildTeamsWithGenderAndPairs(
       players,
@@ -120,20 +133,15 @@ export class Solver2AlgoSolver {
       numGirls,
       numCaptains,
       constraintParams.togetherPairs,
-      constraintParams.apartPairs
+      constraintParams.apartPairs,
+      girlClusters
     );
     if (!buildResult.valid) {
       return { teams: buildResult.teams, valid: false, invalidCount: 1 };
     }
     const teams = buildResult.teams;
 
-    const genderOk =
-      numGirls < numTeams
-        ? !this.hasGenderImbalance(teams)
-        : numGirls === numTeams
-          ? !this.hasGenderImbalance(teams) && !this.hasGenderSpreadImbalance(teams, numGirls)
-          : !this.hasGenderSpreadImbalance(teams, numGirls);
-    if (!genderOk) {
+    if (!this.isGenderValid(teams, numGirls, numTeams, maxGirlClusterSize)) {
       return { teams, valid: false, invalidCount: 1 };
     }
 
@@ -177,8 +185,29 @@ export class Solver2AlgoSolver {
     return false;
   }
 
-  private hasGenderImbalance(teams: Player[][]): boolean {
-    return teams.some((team) => team.filter((p) => p.gender === 'F').length > 1);
+  /**
+   * Valide la répartition des filles entre les équipes.
+   *
+   * Règles :
+   * - Le maximum de filles dans une équipe ne dépasse pas max(ceil(numGirls/numTeams), maxGirlClusterSize).
+   * - Quand numGirls >= numTeams ET qu'il n'y a pas de cluster de filles, chaque équipe doit avoir ≥ 1 fille.
+   *   (Si un cluster existe, une équipe peut se retrouver sans fille — contrainte inévitable.)
+   */
+  private isGenderValid(
+    teams: Player[][],
+    numGirls: number,
+    numTeams: number,
+    maxGirlClusterSize: number
+  ): boolean {
+    if (numGirls === 0) return true;
+    const counts = teams.map((t) => t.filter((p) => p.gender === 'F').length);
+    const maxCount = Math.max(...counts);
+    const minCount = Math.min(...counts);
+    const idealMax = Math.max(Math.ceil(numGirls / numTeams), maxGirlClusterSize);
+    if (maxCount > idealMax) return false;
+    // Sans cluster de filles, chaque équipe doit avoir au moins 1 fille quand numGirls >= numTeams
+    if (numGirls >= numTeams && maxGirlClusterSize <= 1 && minCount === 0) return false;
+    return true;
   }
 
   private hasCaptainImbalance(teams: Player[][]): boolean {
@@ -188,12 +217,6 @@ export class Solver2AlgoSolver {
   private hasCaptainSpreadImbalance(teams: Player[][], numCaptains: number): boolean {
     if (numCaptains < teams.length) return false;
     const counts = teams.map((team) => team.filter((p) => p.isCaptain).length);
-    return counts.some((c) => c === 0) || Math.max(...counts) - Math.min(...counts) > 1;
-  }
-
-  private hasGenderSpreadImbalance(teams: Player[][], numGirls: number): boolean {
-    if (numGirls < teams.length) return false;
-    const counts = teams.map((team) => team.filter((p) => p.gender === 'F').length);
     return counts.some((c) => c === 0) || Math.max(...counts) - Math.min(...counts) > 1;
   }
 
@@ -237,8 +260,13 @@ export class Solver2AlgoSolver {
   }
 
   /**
-   * Construit les équipes en plaçant dans l'ordre : filles → paires ensemble → paires séparés → reste.
-   * Les contraintes de paires sont respectées par construction.
+   * Construit les équipes en plaçant dans l'ordre :
+   * 1a. Clusters de filles liées "ensemble" (placées ensemble en priorité sur la répartition de genre)
+   * 1b. Filles isolées, réparties greedily (équipe avec le moins de filles en premier)
+   * 2.  Capitaines non encore placés
+   * 3.  Clusters "ensemble" (fermeture transitive)
+   * 4.  Paires "séparés"
+   * 5.  Joueurs restants
    */
   private buildTeamsWithGenderAndPairs(
     players: Player[],
@@ -246,7 +274,8 @@ export class Solver2AlgoSolver {
     numGirls: number,
     numCaptains: number,
     togetherPairs: PlayerPair[],
-    apartPairs: PlayerPair[]
+    apartPairs: PlayerPair[],
+    girlClusters: number[][]
   ): { teams: Player[][]; valid: boolean } {
     const playerMap = new Map(players.map((p) => [p.id, p]));
     const n = players.length;
@@ -258,41 +287,46 @@ export class Solver2AlgoSolver {
       teamSizes.push(t < remainder ? baseSize + 1 : baseSize);
     }
 
-    const teams: Player[][] = teamSizes.map((size) => []);
+    const teams: Player[][] = teamSizes.map(() => []);
     const playerToTeam = new Map<number, number>();
 
     const freeSlots = (t: number) => teamSizes[t] - teams[t].length;
 
-    // 1. Placer les filles
-    const girls = players.filter((p) => p.gender === 'F');
-    const boys = players.filter((p) => p.gender !== 'F');
+    // 1a. Placer les clusters de filles ensemble (priorité sur la répartition de genre)
+    for (const cluster of girlClusters) {
+      const clusterPlayers = cluster.map((id) => playerMap.get(id)!).filter(Boolean);
+      const candidates = [...Array(numTeams).keys()].filter((t) => freeSlots(t) >= clusterPlayers.length);
+      if (candidates.length === 0) return { teams, valid: false };
+      const teamIdx = candidates[Math.floor(Math.random() * candidates.length)];
+      for (const g of clusterPlayers) {
+        teams[teamIdx].push(g);
+        playerToTeam.set(g.id, teamIdx);
+      }
+    }
+
+    // 1b. Répartir les filles isolées (non dans un cluster) de façon équilibrée.
+    // Algorithme glouton : chaque fille va dans l'équipe avec le moins de filles actuellement.
     if (numGirls > 0) {
-      const shuffledGirls = this.shuffle([...girls]);
-      if (numGirls <= numTeams) {
-        const teamIndices =
-          numGirls < numTeams
-            ? this.shuffle([...Array(numTeams).keys()]).slice(0, numGirls)
-            : this.shuffle([...Array(numTeams).keys()]);
-        for (let i = 0; i < numGirls; i++) {
-          const teamIdx = teamIndices[i];
-          teams[teamIdx].push(shuffledGirls[i]);
-          playerToTeam.set(shuffledGirls[i].id, teamIdx);
-        }
-      } else {
-        // Distribute girls evenly: floor(numGirls/numTeams) per team, extra go to random teams
-        const girlsPerTeam = Math.floor(numGirls / numTeams);
-        const extraTeams = numGirls % numTeams;
-        const teamOrder = this.shuffle([...Array(numTeams).keys()]);
-        let girlIdx = 0;
-        for (let i = 0; i < numTeams; i++) {
-          const t = teamOrder[i];
-          const count = i < extraTeams ? girlsPerTeam + 1 : girlsPerTeam;
-          for (let j = 0; j < count; j++) {
-            teams[t].push(shuffledGirls[girlIdx]);
-            playerToTeam.set(shuffledGirls[girlIdx].id, t);
-            girlIdx++;
+      const clusteredGirlIds = new Set(girlClusters.flat());
+      const girls = players.filter((p) => p.gender === 'F');
+      const singleGirls = this.shuffle(girls.filter((g) => !clusteredGirlIds.has(g.id)));
+
+      for (const girl of singleGirls) {
+        let minGirlCount = Infinity;
+        let bestTeam = -1;
+        // Parcours dans un ordre aléatoire pour briser les égalités différemment à chaque tentative
+        const order = this.shuffle([...Array(numTeams).keys()]);
+        for (const t of order) {
+          if (freeSlots(t) <= 0) continue;
+          const gc = teams[t].filter((p) => p.gender === 'F').length;
+          if (gc < minGirlCount) {
+            minGirlCount = gc;
+            bestTeam = t;
           }
         }
+        if (bestTeam === -1) return { teams, valid: false };
+        teams[bestTeam].push(girl);
+        playerToTeam.set(girl.id, bestTeam);
       }
     }
 
@@ -302,7 +336,6 @@ export class Solver2AlgoSolver {
       if (unplacedCaptains.length > 0) {
         const nc = unplacedCaptains.length;
         if (nc <= numTeams) {
-          // Au plus 1 capitaine non-encore-placé par équipe
           const teamIndices =
             nc < numTeams
               ? this.shuffle([...Array(numTeams).keys()]).slice(0, nc)
@@ -313,7 +346,6 @@ export class Solver2AlgoSolver {
             playerToTeam.set(unplacedCaptains[i].id, t);
           }
         } else {
-          // Distribuer équitablement
           const capPerTeam = Math.floor(nc / numTeams);
           const extraTeams = nc % numTeams;
           const teamOrder = this.shuffle([...Array(numTeams).keys()]);
@@ -411,14 +443,11 @@ export class Solver2AlgoSolver {
     }
 
     // 6. Remplir les slots restants
-    const remaining = players.filter((p) => !playerToTeam.has(p.id));
-    const remainingGirls = numGirls > numTeams ? remaining.filter((p) => p.gender === 'F') : [];
-    const remainingBoys = remaining.filter((p) => p.gender !== 'F');
-    const shuffledRest = this.shuffle([...remainingGirls, ...remainingBoys]);
+    const remaining = this.shuffle(players.filter((p) => !playerToTeam.has(p.id)));
     let idx = 0;
     for (let t = 0; t < numTeams; t++) {
       while (teams[t].length < teamSizes[t]) {
-        teams[t].push(shuffledRest[idx++]);
+        teams[t].push(remaining[idx++]);
       }
     }
 
