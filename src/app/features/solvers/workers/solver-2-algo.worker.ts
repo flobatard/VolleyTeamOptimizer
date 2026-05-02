@@ -6,7 +6,7 @@ addEventListener('message', ({ data }) => {
   try {
     const { players, targetTeamSize, params } = data;
     const solver = new Solver2AlgoSolver();
-    const { teams, attemptCount, valid } = solver.generateTeams(
+    const { solutions, attemptCount, valid } = solver.generateTeams(
       players,
       targetTeamSize,
       params,
@@ -14,12 +14,11 @@ addEventListener('message', ({ data }) => {
         postMessage({ type: 'progress', percent });
       }
     );
-    postMessage({ type: 'success', teams, attemptCount, valid: valid ?? true });
+    postMessage({ type: 'success', solutions, attemptCount, valid: valid ?? true });
   } catch (error) {
     postMessage({
       type: 'error',
-      message:
-        error instanceof Error ? error.message : 'Erreur inconnue dans le calcul',
+      message: error instanceof Error ? error.message : 'Erreur inconnue dans le calcul',
     });
   }
 });

@@ -230,12 +230,32 @@
     </div>
   </details>
 
-  @if (teams().length > 0) {
+  @if (allSolutions().length > 0) {
     @if (!lastRunValid()) {
       <div class="fallback-warning">
         Aucune solution valide trouvée après le nombre maximum de tentatives. Résultat affiché à titre indicatif. Essayez d'augmenter l'écart max (delta) dans les options avancées.
       </div>
     }
+
+    @if (allSolutions().length > 1) {
+      <div class="solution-tabs" role="tablist" aria-label="Choisir une répartition">
+        @for (sol of allSolutions(); track $index) {
+          <button
+            class="solution-tab"
+            [class.solution-tab--active]="selectedSolutionIndex() === $index"
+            role="tab"
+            [attr.aria-selected]="selectedSolutionIndex() === $index"
+            (click)="selectSolution($index)"
+          >
+            <span class="solution-tab__label">Option {{ $index + 1 }}</span>
+            @if (solutionGaps()[$index] != null) {
+              <span class="solution-tab__gap">écart {{ solutionGaps()[$index] | number:'1.1-1' }}</span>
+            }
+          </button>
+        }
+      </div>
+    }
+
     <div class="teams-actions">
       <button class="copy-btn" (click)="copyTeams()">Copier les équipes</button>
     </div>

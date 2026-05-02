@@ -11,10 +11,17 @@ import { computeTeamDistributionSummary } from '../../../core/services/team-dist
 import { PlayerPair } from '../../../core/models/player-pair';
 import { PlayerTeamSizeConstraint } from '../../../core/models/player-team-size-constraint';
 import { ListPairPlayers } from '../../../shared/list-pair-players/list-pair-players';
+import { Solver2Solution } from '../../../core/services/algos/solver-2-algo-solver';
 
 const TEAM_SIZE_OPTIONS = [3, 4, 5, 6] as const;
 const STORAGE_KEY = 'VTO_solver_2_solver_params';
 const STORAGE_KEY_TEAMS = 'VTO_solver_2_solver_teams';
+
+interface StoredSolutions {
+  solutions: EstimatedTeam[][];
+  gaps: number[];
+  selectedIndex: number;
+}
 
 interface PersistedParams {
   targetTeamSize: number;
@@ -64,12 +71,19 @@ function loadParams(): PersistedParams {
   return DEFAULT_PARAMS;
 }
 
-function loadTeams(): EstimatedTeam[] {
+function loadSolutions(): StoredSolutions {
   try {
     const stored = localStorage.getItem(STORAGE_KEY_TEAMS);
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Ancien format : EstimatedTeam[] (une seule solution)
+      if (Array.isArray(parsed) && !parsed.solutions) {
+        return { solutions: [parsed], gaps: [0], selectedIndex: 0 };
+      }
+      return parsed as StoredSolutions;
+    }
   } catch {}
-  return [];
+  return { solutions: [], gaps: [], selectedIndex: 0 };
 }
 
 @Component({
@@ -82,7 +96,15 @@ export class Solver2SolverComponent {
   protected readonly playerDataService = inject(PlayerDataService);
 
   protected readonly players = this.playerDataService.selectedPlayers;
-  readonly teams = signal<EstimatedTeam[]>(loadTeams());
+
+  private readonly _stored = loadSolutions();
+  /** Toutes les solutions générées (équipes estimées + écart) */
+  readonly allSolutions = signal<EstimatedTeam[][]>(this._stored.solutions);
+  readonly solutionGaps = signal<number[]>(this._stored.gaps);
+  readonly selectedSolutionIndex = signal<number>(this._stored.selectedIndex);
+  /** Équipes de la solution sélectionnée */
+  readonly teams = computed(() => this.allSolutions()[this.selectedSolutionIndex()] ?? []);
+
   readonly isRunning = signal<boolean>(false);
   readonly workerError = signal<string | null>(null);
   readonly progress = signal<number>(0);
@@ -207,7 +229,12 @@ export class Solver2SolverComponent {
     });
 
     effect(() => {
-      localStorage.setItem(STORAGE_KEY_TEAMS, JSON.stringify(this.teams()));
+      const stored: StoredSolutions = {
+        solutions: this.allSolutions(),
+        gaps: this.solutionGaps(),
+        selectedIndex: this.selectedSolutionIndex(),
+      };
+      localStorage.setItem(STORAGE_KEY_TEAMS, JSON.stringify(stored));
     });
   }
 
@@ -263,6 +290,10 @@ export class Solver2SolverComponent {
     this.femaleImpactCoef.set(Math.max(0.1, Math.min(1, +value)));
   }
 
+  selectSolution(index: number): void {
+    this.selectedSolutionIndex.set(index);
+  }
+
   copyTeams(): void {
     const text = this.teams()
       .map((t, i) =>
@@ -297,10 +328,16 @@ export class Solver2SolverComponent {
         const killerTh = this.killerThreshold();
         const passerTh = this.passerThreshold();
         const valid = data.valid ?? true;
-        const estimatedTeams = data.teams.map((t: Player[]) =>
-          estimateTeamQuality(t, 1, killerTh, passerTh)
+        const rawSolutions: Solver2Solution[] = data.solutions ?? [];
+        const estimatedSolutions = rawSolutions.map((sol) =>
+          sol.teams.map((t: Player[]) => estimateTeamQuality(t, 1, killerTh, passerTh))
         );
-        this.teams.set(estimatedTeams);
+        const gaps = rawSolutions.map((sol) =>
+          sol.gap === Infinity || sol.gap == null ? 99 : Math.round(sol.gap * 10) / 10
+        );
+        this.allSolutions.set(estimatedSolutions);
+        this.solutionGaps.set(gaps);
+        this.selectedSolutionIndex.set(0);
         this.lastRunValid.set(valid);
         this.lastAttemptCount.set(data.attemptCount ?? null);
         this.isRunning.set(false);
