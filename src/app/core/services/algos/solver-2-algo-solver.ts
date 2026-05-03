@@ -19,10 +19,11 @@ export interface Solver2Params {
   PLAYER_TEAM_SIZE_CONSTRAINTS?: PlayerTeamSizeConstraint[];
 }
 
-/** Une solution générée : équipes + écart max de niveau. */
+/** Une solution générée : équipes, écart max de niveau, et nombre d'échanges effectués. */
 export interface Solver2Solution {
   teams: Player[][];
   gap: number;
+  swapCount: number;
 }
 
 /** Contexte partagé entre toutes les tentatives d'une même génération. */
@@ -124,6 +125,7 @@ export class Solver2AlgoSolver {
     const fallback: Solver2Solution = {
       teams: this.chunkIntoTeams(this.shuffle([...players]), numTeams),
       gap: Infinity,
+      swapCount: 0,
     };
     const solutions: Solver2Solution[] = [primaryResult.solution ?? fallback];
 
@@ -208,13 +210,13 @@ export class Solver2AlgoSolver {
     if (numCaptains > 0 && !this.isCaptainValid(buildResult.teams, numCaptains, numTeams)) return null;
     if (!this.isTeamSizeValid(buildResult.teams, playerTeamSizeConstraints)) return null;
 
-    const optimized = this.localSearch(
+    const { teams: optimized, swapCount } = this.localSearch(
       buildResult.teams, togetherPairs, femaleImpactCoef,
       numGirls, numCaptains, numTeams, maxGirlClusterSize, haveApartPair
     );
 
     const gap = maxGlobalDelta > 0 ? this.maxGap(this.computeTeamStats(optimized, femaleImpactCoef)) : 0;
-    return { teams: optimized, gap };
+    return { teams: optimized, gap, swapCount };
   }
 
   /**
@@ -257,8 +259,8 @@ export class Solver2AlgoSolver {
     numTeams: number,
     maxGirlClusterSize: number,
     haveApartPair: (a: number, b: number) => boolean
-  ): Player[][] {
-    if (numTeams < 2) return teams;
+  ): { teams: Player[][]; swapCount: number } {
+    if (numTeams < 2) return { teams, swapCount: 0 };
 
     const clustersByTeam = this.buildClustersByTeam(teams, togetherPairs);
     const girlCounts = teams.map((t) => t.filter((p) => p.gender === 'F').length);
@@ -270,6 +272,7 @@ export class Solver2AlgoSolver {
     const MAX_ITER = Solver2AlgoSolver.LOCAL_SEARCH_ITER;
     const MAX_NO_IMPROVEMENT = Solver2AlgoSolver.LOCAL_SEARCH_MAX_NO_IMPROVEMENT;
     let noImprovementCount = 0;
+    let swapCount = 0;
 
     for (let iter = 0; iter < MAX_ITER && noImprovementCount < MAX_NO_IMPROVEMENT; iter++) {
       const t1 = Math.floor(Math.random() * numTeams);
@@ -299,13 +302,14 @@ export class Solver2AlgoSolver {
         currentStats = newStats;
         currentScore = newScore;
         noImprovementCount = 0;
+        swapCount++;
       } else {
         this.applySwap(teams, clustersByTeam, girlCounts, captainCounts, t1, t2, c2, c1);
         noImprovementCount++;
       }
     }
 
-    return teams;
+    return { teams, swapCount };
   }
 
   private isSwapValid(

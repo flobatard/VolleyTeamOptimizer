@@ -111,6 +111,7 @@ export class Solver2SolverComponent {
   /** true si la dernière génération a trouvé une solution valide, false si fallback */
   readonly lastRunValid = signal<boolean>(true);
   readonly lastAttemptCount = signal<number | null>(null);
+  readonly lastSwapCount = signal<number | null>(null);
 
   private readonly p = loadParams();
 
@@ -340,6 +341,8 @@ export class Solver2SolverComponent {
         this.selectedSolutionIndex.set(0);
         this.lastRunValid.set(valid);
         this.lastAttemptCount.set(data.attemptCount ?? null);
+        const totalSwaps = rawSolutions.reduce((sum, s) => sum + (s.swapCount ?? 0), 0);
+        this.lastSwapCount.set(totalSwaps);
         this.isRunning.set(false);
         worker.terminate();
       }
