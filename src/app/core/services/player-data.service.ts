@@ -64,13 +64,18 @@ export class PlayerDataService {
         }
         const players: Player[] = [];
         for (let i = 0; i < dataLines.length; i++) {
-          const parts = dataLines[i].split(separator);
+          const parts = this.parseCsvLine(dataLines[i], separator);
           if (parts.length < 6) {
             this.csvImportResult.set({ success: false, error: `Ligne ${i + 2} : format invalide (${parts.length} colonnes au lieu de 6).` });
             return;
           }
           const [nom, genre, note_globale, attaque, passe, defense] = parts;
-          const stats = [Number(note_globale), Number(attaque), Number(passe), Number(defense)];
+          const stats = [
+            this.parseCsvNumber(note_globale),
+            this.parseCsvNumber(attaque),
+            this.parseCsvNumber(passe),
+            this.parseCsvNumber(defense),
+          ];
           if (stats.some(isNaN)) {
             this.csvImportResult.set({ success: false, error: `Ligne ${i + 2} (${nom.trim()}) : valeur numérique invalide.` });
             return;
@@ -91,7 +96,8 @@ export class PlayerDataService {
         this._selectedPlayerIds.set(selectedIds);
         this.persistSelected(selectedIds);
         this.csvImportResult.set({ success: true, count: players.length });
-      } catch {
+      } catch(error) {
+        console.error(error)
         this.csvImportResult.set({ success: false, error: 'Erreur inattendue lors de la lecture du fichier.' });
       }
     };
@@ -99,6 +105,44 @@ export class PlayerDataService {
       this.csvImportResult.set({ success: false, error: 'Impossible de lire le fichier.' });
     };
     reader.readAsText(file, 'UTF-8');
+  }
+
+  /**
+   * Découpe une ligne CSV en champs en respectant les guillemets : un séparateur
+   * à l'intérieur de "..." ne déclenche pas de découpage (ex. "5,5"). Les guillemets
+   * encadrants sont retirés et les doubles guillemets ("") sont décodés en un seul.
+   */
+  private parseCsvLine(line: string, separator: string): string[] {
+    const fields: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === separator && !inQuotes) {
+        fields.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    fields.push(current);
+    return fields;
+  }
+
+  /**
+   * Convertit un champ CSV en nombre de façon résiliente : retire les guillemets
+   * résiduels et accepte la virgule comme séparateur décimal (ex. "5,5" → 5.5).
+   */
+  private parseCsvNumber(value: string): number {
+    const cleaned = value.trim().replace(/^"|"$/g, '').trim().replace(',', '.');
+    return cleaned === '' ? 0 : Number(cleaned);
   }
 
   togglePlayerSelection(id: number): void {

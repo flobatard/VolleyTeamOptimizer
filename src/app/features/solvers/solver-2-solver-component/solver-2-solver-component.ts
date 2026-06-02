@@ -77,7 +77,7 @@ function loadSolutions(): StoredSolutions {
     if (stored) {
       const parsed = JSON.parse(stored);
       // Ancien format : EstimatedTeam[] (une seule solution)
-      if (Array.isArray(parsed) && !parsed.solutions) {
+      if (Array.isArray(parsed)) {
         return { solutions: [parsed], gaps: [0], selectedIndex: 0 };
       }
       return parsed as StoredSolutions;
