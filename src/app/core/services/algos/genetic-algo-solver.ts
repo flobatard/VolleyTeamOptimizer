@@ -225,7 +225,7 @@ export class GeneticAlgoSolver {
 
       // Mixité
       const females = team.filter(p => p.gender === 'F').length;
-      const males_others = team.filter(p => p.gender === 'M' || p.gender  === "A").length;
+      const males_others = team.filter(p => p.gender !== 'F').length;
       const captains = team.filter(p => p.isCaptain).length;
       max_female = Math.max(females, max_female);
       min_female = Math.min(females, min_female);

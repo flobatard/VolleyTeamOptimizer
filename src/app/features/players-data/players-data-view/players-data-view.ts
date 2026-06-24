@@ -1,7 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { PlayerDataService } from '../../../core/services/player-data.service';
-import { AddPlayerModal } from '../../../shared/add-player-modal/add-player-modal';
+import { AddPlayerModal, AddPlayerFormData } from '../../../shared/add-player-modal/add-player-modal';
 import { ConfirmModal } from '../../../shared/confirm-modal/confirm-modal';
+import { normalizeGender } from '../../../core/models/player';
 
 @Component({
   selector: 'app-players-data-view',
@@ -101,7 +102,7 @@ export class PlayersDataView {
     this.showAddPlayerModal.set(true);
   }
 
-  onPlayerAdded(data: { name: string; gender: string; global_impact: number; attack: number; set: number; defense: number }): void {
+  onPlayerAdded(data: AddPlayerFormData): void {
     this.playerDataService.addPlayerWithData(data);
     this.showAddPlayerModal.set(false);
   }
@@ -137,7 +138,7 @@ export class PlayersDataView {
 
   updateGender(id: number, event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
-    this.playerDataService.updatePlayer(id, { gender: value });
+    this.playerDataService.updatePlayer(id, { gender: normalizeGender(value) });
   }
 
   updateStat(

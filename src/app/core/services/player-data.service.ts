@@ -1,5 +1,5 @@
 import { computed, Injectable, signal } from '@angular/core';
-import { Player } from '../models/player';
+import { Player, normalizeGender } from '../models/player';
 
 type CsvImportResult = { success: true; count: number } | { success: false; error: string };
 
@@ -83,7 +83,7 @@ export class PlayerDataService {
           players.push({
             id: i,
             name: nom.trim(),
-            gender: genre.trim(),
+            gender: normalizeGender(genre),
             global_impact: stats[0],
             attack: stats[1],
             set: stats[2],

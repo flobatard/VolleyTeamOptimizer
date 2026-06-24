@@ -1,9 +1,10 @@
 import { Component, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Gender } from '../../core/models/player';
 
 export interface AddPlayerFormData {
   name: string;
-  gender: string;
+  gender: Gender;
   global_impact: number;
   attack: number;
   set: number;
@@ -22,7 +23,7 @@ export class AddPlayerModal {
 
   protected form = {
     name: '',
-    gender: 'H' as 'H' | 'F' | 'A',
+    gender: 'H' as Gender,
     global_impact: 5,
     attack: 5,
     set: 5,
