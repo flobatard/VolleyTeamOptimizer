@@ -5,6 +5,8 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:preprod": "ng build --configuration preprod",
+    "build:prod": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:VolleyTeamOptimizer": "node dist/VolleyTeamOptimizer/server/server.mjs"

@@ -63,6 +63,9 @@
   color: var(--color-text-dark);
   font-size: 1rem;
   font-weight: 600;
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
   border-radius: var(--radius-lg);
   text-decoration: none;
   transition: background var(--transition-base), transform 0.1s ease;

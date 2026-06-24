@@ -54,7 +54,34 @@
                   "maximumError": "8kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ]
+            },
+            "preprod": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.preprod.ts"
+                }
+              ]
             },
             "development": {
               "optimization": false,
@@ -69,6 +96,9 @@
           "configurations": {
             "production": {
               "buildTarget": "VolleyTeamOptimizer:build:production"
+            },
+            "preprod": {
+              "buildTarget": "VolleyTeamOptimizer:build:preprod"
             },
             "development": {
               "buildTarget": "VolleyTeamOptimizer:build:development"

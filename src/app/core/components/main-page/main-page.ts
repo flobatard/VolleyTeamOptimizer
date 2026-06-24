@@ -1,6 +1,6 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { PlayersDataView } from '../../../features/players-data/players-data-view/players-data-view';
+import { AuthService } from '../../auth/auth.service';
 
 @Component({
   selector: 'app-main-page',
@@ -9,4 +9,6 @@ import { PlayersDataView } from '../../../features/players-data/players-data-vie
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './main-page.scss',
 })
-export class MainPage {}
+export class MainPage {
+  protected readonly auth = inject(AuthService);
+}

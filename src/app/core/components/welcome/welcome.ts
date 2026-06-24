@@ -1,6 +1,7 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Title, Meta } from '@angular/platform-browser';
+import { AuthService } from '../../auth/auth.service';
 
 @Component({
   selector: 'app-welcome',
@@ -10,6 +11,8 @@ import { Title, Meta } from '@angular/platform-browser';
   styleUrl: './welcome.scss',
 })
 export class Welcome implements OnInit {
+  protected readonly auth = inject(AuthService);
+
   constructor(private titleService: Title, private metaService: Meta) {}
 
   ngOnInit(): void {
