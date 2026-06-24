@@ -1,4 +1,4 @@
-import { Component, output } from '@angular/core';
+import { Component, output, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Gender } from '../../core/models/player';
 
@@ -15,6 +15,7 @@ export interface AddPlayerFormData {
   selector: 'app-add-player-modal',
   imports: [FormsModule],
   templateUrl: './add-player-modal.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './add-player-modal.scss',
 })
 export class AddPlayerModal {

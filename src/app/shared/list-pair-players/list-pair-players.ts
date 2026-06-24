@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PlayerDataService } from '../../core/services/player-data.service';
 import { Player } from '../../core/models/player';
@@ -8,6 +8,7 @@ import { PlayerPair } from '../../core/models/player-pair';
   selector: 'app-list-pair-players',
   imports: [FormsModule],
   templateUrl: './list-pair-players.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './list-pair-players.scss',
 })
 export class ListPairPlayers {

@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { PlayerDataService } from '../../../core/services/player-data.service';
@@ -90,6 +90,7 @@ function loadSolutions(): StoredSolutions {
   selector: 'app-solver-2-solver-component',
   imports: [FormsModule, ListPairPlayers, DecimalPipe],
   templateUrl: './solver-2-solver-component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './solver-2-solver-component.scss',
 })
 export class Solver2SolverComponent {

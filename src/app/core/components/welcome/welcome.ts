@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Title, Meta } from '@angular/platform-browser';
 
@@ -6,6 +6,7 @@ import { Title, Meta } from '@angular/platform-browser';
   selector: 'app-welcome',
   imports: [RouterLink],
   templateUrl: './welcome.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './welcome.scss',
 })
 export class Welcome implements OnInit {

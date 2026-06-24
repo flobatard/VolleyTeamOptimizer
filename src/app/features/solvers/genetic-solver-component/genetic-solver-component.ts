@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PlayerDataService } from '../../../core/services/player-data.service';
 import { Player } from '../../../core/models/player';
@@ -74,6 +74,7 @@ function loadTeams(): EstimatedTeam[] {
   selector: 'app-genetic-solver-component',
   imports: [FormsModule, ListPairPlayers],
   templateUrl: './genetic-solver-component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './genetic-solver-component.scss',
 })
 export class GeneticSolverComponent {

@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { PlayerDataService } from '../../../core/services/player-data.service';
 import { AddPlayerModal, AddPlayerFormData } from '../../../shared/add-player-modal/add-player-modal';
 import { ConfirmModal } from '../../../shared/confirm-modal/confirm-modal';
@@ -8,6 +8,7 @@ import { normalizeGender } from '../../../core/models/player';
   selector: 'app-players-data-view',
   imports: [AddPlayerModal, ConfirmModal],
   templateUrl: './players-data-view.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './players-data-view.scss',
 })
 export class PlayersDataView {
